@@ -166,7 +166,7 @@ public class MAXSwerveModule extends SubsystemBase{
   }
 
   public void setZero() {
-    m_drivingPIDController.setReference(0.5, CANSparkMax.ControlType.kVelocity);
+    m_drivingPIDController.setReference(0, CANSparkMax.ControlType.kVelocity);
     m_turningPIDController.setReference(0, CANSparkMax.ControlType.kPosition);
   }
 

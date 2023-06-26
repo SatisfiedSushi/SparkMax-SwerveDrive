@@ -72,12 +72,9 @@ public class DriveSubsystem extends SubsystemBase {
   public DriveSubsystem() {
   }
 
-  public boolean getIsFieldRelative() {
-    return isFieldRelative;
-  }
-
   public void updateShuffleBoard() {
     SmartDashboard.putNumber("Gyro Angle", Rotation2d.fromDegrees(m_gyro.getYaw()).getDegrees());
+    SmartDashboard.putBoolean("Field Relative", isFieldRelative);
   }
 
   @Override
@@ -188,7 +185,7 @@ public class DriveSubsystem extends SubsystemBase {
     double rotDelivered = m_currentRotation * DriveConstants.kMaxAngularSpeed;
 
     var swerveModuleStates = DriveConstants.kDriveKinematics.toSwerveModuleStates(
-        fieldRelative
+        !fieldRelative
             ? ChassisSpeeds.fromFieldRelativeSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered,
                 Rotation2d.fromDegrees(m_gyro.getYaw()))
             : new ChassisSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered));
