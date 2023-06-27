@@ -14,6 +14,7 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.util.WPIUtilJNI;
 import edu.wpi.first.wpilibj.SPI;
+import edu.wpi.first.wpilibj.interfaces.Gyro;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import com.kauailabs.navx.frc.AHRS;
@@ -70,6 +71,8 @@ public class DriveSubsystem extends SubsystemBase {
 
   /** Creates a new DriveSubsystem. */
   public DriveSubsystem() {
+    zeroHeading();
+    m_gyro.zeroYaw();
   }
 
   public void updateShuffleBoard() {
@@ -185,7 +188,7 @@ public class DriveSubsystem extends SubsystemBase {
     double rotDelivered = m_currentRotation * DriveConstants.kMaxAngularSpeed;
 
     var swerveModuleStates = DriveConstants.kDriveKinematics.toSwerveModuleStates(
-        !fieldRelative
+        fieldRelative
             ? ChassisSpeeds.fromFieldRelativeSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered,
                 Rotation2d.fromDegrees(m_gyro.getYaw()))
             : new ChassisSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered));
@@ -234,6 +237,13 @@ public class DriveSubsystem extends SubsystemBase {
     m_rearLeft.setZero();
     m_frontRight.setZero();
     m_rearRight.setZero();
+  }
+
+  public void setOffsetZeros() {
+    m_frontLeft.setOffsetZero();
+    m_rearLeft.setOffsetZero();
+    m_frontRight.setOffsetZero();
+    m_rearRight.setOffsetZero();
   }
 
   /** Zeroes the heading of the robot. */

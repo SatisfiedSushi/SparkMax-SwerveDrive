@@ -30,7 +30,7 @@ public class MAXSwerveModule extends SubsystemBase{
   private final SparkMaxPIDController m_drivingPIDController;
   private final SparkMaxPIDController m_turningPIDController;
 
-  private double m_chassisAngularOffset = 0;
+  private double m_chassisAngularOffset;
   private SwerveModuleState m_desiredState = new SwerveModuleState(0.0, new Rotation2d());
 
   /**
@@ -154,6 +154,9 @@ public class MAXSwerveModule extends SubsystemBase{
         new Rotation2d(m_turningEncoder.getPosition()));
 
     // Command driving and turning SPARKS MAX towards their respective setpoints.
+    SmartDashboard.putNumber("Module " + (this.m_turningSparkMax.getDeviceId()) + " Calculated Drive Speed", optimizedDesiredState.speedMetersPerSecond);
+    SmartDashboard.putNumber("Module " + (this.m_turningSparkMax.getDeviceId()) + " Calculated Angle", optimizedDesiredState.angle.getDegrees());
+
     m_drivingPIDController.setReference(optimizedDesiredState.speedMetersPerSecond, CANSparkMax.ControlType.kVelocity);
     m_turningPIDController.setReference(optimizedDesiredState.angle.getRadians(), CANSparkMax.ControlType.kPosition);
 
@@ -168,6 +171,11 @@ public class MAXSwerveModule extends SubsystemBase{
   public void setZero() {
     m_drivingPIDController.setReference(0, CANSparkMax.ControlType.kVelocity);
     m_turningPIDController.setReference(0, CANSparkMax.ControlType.kPosition);
+  }
+
+  public void setOffsetZero() {
+    m_drivingPIDController.setReference(0.4, CANSparkMax.ControlType.kVelocity);
+    m_turningPIDController.setReference(m_chassisAngularOffset, CANSparkMax.ControlType.kPosition);
   }
 
   @Override
