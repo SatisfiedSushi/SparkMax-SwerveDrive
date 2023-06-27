@@ -155,7 +155,7 @@ public class MAXSwerveModule extends SubsystemBase{
 
     // Command driving and turning SPARKS MAX towards their respective setpoints.
     SmartDashboard.putNumber("Module " + (this.m_turningSparkMax.getDeviceId()) + " Calculated Drive Speed", optimizedDesiredState.speedMetersPerSecond);
-    SmartDashboard.putNumber("Module " + (this.m_turningSparkMax.getDeviceId()) + " Calculated Angle", optimizedDesiredState.angle.getDegrees());
+    SmartDashboard.putNumber("Module " + (this.m_turningSparkMax.getDeviceId()) + " Calculated Angle", optimizedDesiredState.angle.getRadians());
 
     m_drivingPIDController.setReference(optimizedDesiredState.speedMetersPerSecond, CANSparkMax.ControlType.kVelocity);
     m_turningPIDController.setReference(optimizedDesiredState.angle.getRadians(), CANSparkMax.ControlType.kPosition);
