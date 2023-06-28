@@ -18,10 +18,15 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import com.kauailabs.navx.frc.AHRS;
 import frc.robot.Constants.DriveConstants;
+import frc.robot.Constants.LimelightConstants;
 import frc.utils.SwerveUtils;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
+import frc.robot.subsystems.LimeLight;
+
 public class DriveSubsystem extends SubsystemBase {
+  private LimeLight LL;
+
   private double gyroOffset;
   // Create MAXSwerveModules
   private final MAXSwerveModule m_frontLeft = new MAXSwerveModule(
@@ -48,6 +53,7 @@ public class DriveSubsystem extends SubsystemBase {
   private final AHRS m_gyro = new AHRS(SPI.Port.kMXP);
 
   private boolean isFieldRelative = true;
+  private boolean isTrackingObject = false;
 
   // Slew rate filter variables for controlling lateral acceleration
   private double m_currentRotation = 0.0;
@@ -70,7 +76,8 @@ public class DriveSubsystem extends SubsystemBase {
       });
 
   /** Creates a new DriveSubsystem. */
-  public DriveSubsystem() {
+  public DriveSubsystem(LimeLight LL) {
+    this.LL = LL;
     zeroHeading();
     //m_gyro.zeroYaw();
   }
@@ -78,6 +85,7 @@ public class DriveSubsystem extends SubsystemBase {
   public void updateShuffleBoard() {
     SmartDashboard.putNumber("Gyro Angle", Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset);
     SmartDashboard.putBoolean("Field Relative", isFieldRelative);
+    SmartDashboard.putBoolean("Tracking Object", isTrackingObject);
   }
 
   @Override
@@ -129,10 +137,14 @@ public class DriveSubsystem extends SubsystemBase {
    * @param fieldRelative Whether the provided x and y speeds are relative to the
    *                      field.
    * @param rateLimit     Whether to enable rate limiting for smoother control.
+   * @param trackingObject Whether to enable object tracking using a limelight
    */
-  public void drive(double xSpeed, double ySpeed, double rot, boolean fieldRelative, boolean rateLimit) {
+  public void drive(double xSpeed, double ySpeed, double rot, boolean fieldRelative, boolean rateLimit, boolean trackingObject) {
+
+    LL.setPipeline(5.0);
 
     this.isFieldRelative = fieldRelative;
+    this.isTrackingObject = trackingObject;
 
     double xSpeedCommanded;
     double ySpeedCommanded;
@@ -175,12 +187,12 @@ public class DriveSubsystem extends SubsystemBase {
 
       xSpeedCommanded = m_currentTranslationMag * Math.cos(m_currentTranslationDir);
       ySpeedCommanded = m_currentTranslationMag * Math.sin(m_currentTranslationDir);
-      m_currentRotation = m_rotLimiter.calculate(rot);
+      m_currentRotation = m_rotLimiter.calculate(trackingObject ? calculateTrackingAngularVelocity() : rot);
 
     } else {
       xSpeedCommanded = xSpeed;
       ySpeedCommanded = ySpeed;
-      m_currentRotation = rot;
+      m_currentRotation = m_rotLimiter.calculate(trackingObject ? calculateTrackingAngularVelocity() : rot);
     }
 
     // Convert the commanded speeds into the correct units for the drivetrain
@@ -190,7 +202,7 @@ public class DriveSubsystem extends SubsystemBase {
 
     var swerveModuleStates = DriveConstants.kDriveKinematics.toSwerveModuleStates(
         fieldRelative
-            ? ChassisSpeeds.fromFieldRelativeSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered,
+            ? ChassisSpeeds.fromFieldRelativeSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered, 
                 Rotation2d.fromDegrees(-m_gyro.getYaw() + gyroOffset))
             : new ChassisSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered));
     SwerveDriveKinematics.desaturateWheelSpeeds(
@@ -199,6 +211,21 @@ public class DriveSubsystem extends SubsystemBase {
     m_frontRight.setDesiredState(swerveModuleStates[1]);
     m_rearLeft.setDesiredState(swerveModuleStates[2]);
     m_rearRight.setDesiredState(swerveModuleStates[3]);
+  }
+
+  public double calculateTrackingAngularVelocity() {
+    if (LL.getXAngle() != 0 && Math.abs(LL.getXAngle()) >= 1) {
+      double speed = 0.03; // between 0 amd 1
+      double direction = (-LL.getXAngle()) / Math.abs(LL.getXAngle());
+      double scaleFactor = (Math.abs(LL.getXAngle())) * speed;
+      SmartDashboard.putNumber("tracking velocity", direction * scaleFactor);
+      if (scaleFactor > 2) {
+        scaleFactor = 1.4;
+      }
+      return direction * scaleFactor;
+    }
+    
+    return 0;
   }
 
   /**

@@ -19,10 +19,12 @@ import frc.robot.Constants.AutoConstants;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.OIConstants;
 import frc.robot.subsystems.DriveSubsystem;
+import frc.robot.subsystems.LimeLight;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
+import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.SwerveControllerCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import java.util.List;
@@ -35,14 +37,21 @@ import java.util.List;
  */
 public class RobotContainer {
         // The robot's subsystems
-        private final DriveSubsystem m_robotDrive = new DriveSubsystem();
+        private final LimeLight m_limeLight = new LimeLight(this);
+        private final DriveSubsystem m_robotDrive = new DriveSubsystem(m_limeLight);
+
         private boolean isFieldRelative = true;
+        private boolean isTrackingObject = false;
 
         // The driver's controller
         XboxController m_driverController = new XboxController(OIConstants.kDriverControllerPort);
 
         private void toggleFieldRelative() {
                 isFieldRelative = !isFieldRelative;
+        }
+
+        private void toggleTrackingObject() {
+                isTrackingObject = !isTrackingObject;
         }
 
         /**
@@ -64,7 +73,7 @@ public class RobotContainer {
                                                         OIConstants.kDriveDeadband),
                                         -MathUtil.applyDeadband(m_driverController.getRightX()/2,
                                                         OIConstants.kDriveDeadband),
-                                        isFieldRelative, true),
+                                        isFieldRelative, true, isTrackingObject),
                                 m_robotDrive));
         }
 
@@ -88,9 +97,8 @@ public class RobotContainer {
                                                 () -> toggleFieldRelative()));
 
                 new JoystickButton(m_driverController, Button.kX.value)
-                        .toggleOnTrue(new RunCommand(
-                                () -> m_robotDrive.setOffsetZeros(), 
-                                m_robotDrive));
+                        .toggleOnTrue(new InstantCommand(
+                                () -> toggleTrackingObject()));
                                 
                 new JoystickButton(m_driverController, Button.kA.value)
                         .onTrue(new InstantCommand(
@@ -141,6 +149,6 @@ public class RobotContainer {
                 m_robotDrive.resetOdometry(exampleTrajectory.getInitialPose());
 
                 // Run path following command, then stop at the end.
-                return swerveControllerCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, false, false));
+                return swerveControllerCommand.andThen(() -> m_robotDrive.drive(0, 0, 0, false, false, false));
         }
 }
