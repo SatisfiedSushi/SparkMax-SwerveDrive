@@ -15,7 +15,6 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.util.WPIUtilJNI;
 import edu.wpi.first.wpilibj.SPI;
-import edu.wpi.first.wpilibj.interfaces.Gyro;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import com.kauailabs.navx.frc.AHRS;
@@ -24,13 +23,19 @@ import com.pathplanner.lib.commands.PPSwerveControllerCommand;
 
 import frc.robot.Constants;
 import frc.robot.Constants.DriveConstants;
+import frc.robot.Constants.LimelightConstants;
 import frc.utils.SwerveUtils;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
+import frc.robot.subsystems.LimeLight;
+
 public class DriveSubsystem extends SubsystemBase {
+  private LimeLight LL;
+
+  private double gyroOffset;
   // Create MAXSwerveModules
   private final MAXSwerveModule m_frontLeft = new MAXSwerveModule(
       DriveConstants.kFrontLeftDrivingCanId,
@@ -56,6 +61,7 @@ public class DriveSubsystem extends SubsystemBase {
   private final AHRS m_gyro = new AHRS(SPI.Port.kMXP);
 
   private boolean isFieldRelative = true;
+  private boolean isTrackingObject = false;
 
   // Slew rate filter variables for controlling lateral acceleration
   private double m_currentRotation = 0.0;
@@ -79,14 +85,16 @@ public class DriveSubsystem extends SubsystemBase {
       });
 
   /** Creates a new DriveSubsystem. */
-  public DriveSubsystem() {
+  public DriveSubsystem(LimeLight LL) {
+    this.LL = LL;
     zeroHeading();
-    m_gyro.zeroYaw();
+    //m_gyro.zeroYaw();
   }
 
   public void updateShuffleBoard() {
-    SmartDashboard.putNumber("Gyro Angle", Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees());
+    SmartDashboard.putNumber("Gyro Angle", Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset);
     SmartDashboard.putBoolean("Field Relative", isFieldRelative);
+    SmartDashboard.putBoolean("Tracking Object", isTrackingObject);
   }
 
   @Override
@@ -94,7 +102,7 @@ public class DriveSubsystem extends SubsystemBase {
     updateShuffleBoard();
     // Update the odometry in the periodic block
     m_odometry.update(
-        Rotation2d.fromDegrees(-m_gyro.getYaw()),
+        Rotation2d.fromDegrees(-m_gyro.getYaw() + gyroOffset),
         new SwerveModulePosition[] {
             m_frontLeft.getPosition(),
             m_frontRight.getPosition(),
@@ -119,7 +127,7 @@ public class DriveSubsystem extends SubsystemBase {
    */
   public void resetOdometry(Pose2d pose) {
     m_odometry.resetPosition(
-        Rotation2d.fromDegrees(-m_gyro.getYaw()),
+        Rotation2d.fromDegrees(-m_gyro.getYaw() + gyroOffset),
         new SwerveModulePosition[] {
             m_frontLeft.getPosition(),
             m_frontRight.getPosition(),
@@ -138,9 +146,14 @@ public class DriveSubsystem extends SubsystemBase {
    * @param fieldRelative Whether the provided x and y speeds are relative to the
    *                      field.
    * @param rateLimit     Whether to enable rate limiting for smoother control.
+   * @param trackingObject Whether to enable object tracking using a limelight
    */
-  public void drive(double xSpeed, double ySpeed, double rot, boolean fieldRelative, boolean rateLimit) {
+  public void drive(double xSpeed, double ySpeed, double rot, boolean fieldRelative, boolean rateLimit, boolean trackingObject) {
+
+    LL.setPipeline(5.0);
+
     this.isFieldRelative = fieldRelative;
+    this.isTrackingObject = trackingObject;
 
     double xSpeedCommanded;
     double ySpeedCommanded;
@@ -183,12 +196,12 @@ public class DriveSubsystem extends SubsystemBase {
 
       xSpeedCommanded = m_currentTranslationMag * Math.cos(m_currentTranslationDir);
       ySpeedCommanded = m_currentTranslationMag * Math.sin(m_currentTranslationDir);
-      m_currentRotation = m_rotLimiter.calculate(rot);
+      m_currentRotation = m_rotLimiter.calculate(trackingObject ? calculateTrackingAngularVelocity() : rot);
 
     } else {
       xSpeedCommanded = xSpeed;
       ySpeedCommanded = ySpeed;
-      m_currentRotation = rot;
+      m_currentRotation = m_rotLimiter.calculate(trackingObject ? calculateTrackingAngularVelocity() : rot);
     }
 
     // Convert the commanded speeds into the correct units for the drivetrain
@@ -198,8 +211,8 @@ public class DriveSubsystem extends SubsystemBase {
 
     var swerveModuleStates = DriveConstants.kDriveKinematics.toSwerveModuleStates(
         fieldRelative
-            ? ChassisSpeeds.fromFieldRelativeSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered,
-                Rotation2d.fromDegrees(-m_gyro.getYaw()))
+            ? ChassisSpeeds.fromFieldRelativeSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered, 
+                Rotation2d.fromDegrees(-m_gyro.getYaw() + gyroOffset))
             : new ChassisSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered));
     SwerveDriveKinematics.desaturateWheelSpeeds(
         swerveModuleStates, DriveConstants.kMaxSpeedMetersPerSecond);
@@ -207,6 +220,21 @@ public class DriveSubsystem extends SubsystemBase {
     m_frontRight.setDesiredState(swerveModuleStates[1]);
     m_rearLeft.setDesiredState(swerveModuleStates[2]);
     m_rearRight.setDesiredState(swerveModuleStates[3]);
+  }
+
+  public double calculateTrackingAngularVelocity() {
+    if (LL.getXAngle() != 0 && Math.abs(LL.getXAngle()) >= 1) {
+      double speed = 0.03; // between 0 amd 1
+      double direction = (-LL.getXAngle()) / Math.abs(LL.getXAngle());
+      double scaleFactor = (Math.abs(LL.getXAngle())) * speed;
+      SmartDashboard.putNumber("tracking velocity", direction * scaleFactor);
+      if (scaleFactor > 2) {
+        scaleFactor = 1.4;
+      }
+      return direction * scaleFactor;
+    }
+    
+    return 0;
   }
 
   /**
@@ -257,16 +285,18 @@ public class DriveSubsystem extends SubsystemBase {
 
   /** Zeroes the heading of the robot. */
   public void zeroHeading() {
-    m_gyro.reset();
+    //m_gyro.reset();
+    gyroOffset = -Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees();
+    System.out.println(gyroOffset);
   }
-
+  
   /**
    * Returns the heading of the robot.
    *
    * @return the robot's heading in degrees, from -180 to 180
    */
   public double getHeading() {
-    return Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees();
+    return Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset;
   }
 
   /**

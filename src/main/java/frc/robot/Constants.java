@@ -139,4 +139,14 @@ public final class Constants {
   public static final class NeoMotorConstants {
     public static final double kFreeSpeedRpm = 5676;
   }
+
+  public static final class LimelightConstants {
+    public static final double kLLHeight = Units.inchesToMeters(24.5);    
+  }
+
+  public static final class shapeSizes{
+    public static final double squareSize = 1;
+    public static final double figureEightSize = 1;
+    public static final double starSize = 1;
+  }
 }
