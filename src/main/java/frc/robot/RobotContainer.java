@@ -11,7 +11,6 @@ import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.XboxController.Button;
 import frc.robot.Constants.OIConstants;
 import frc.robot.subsystems.DriveSubsystem;
-import frc.robot.subsystems.LimeLight;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
@@ -30,6 +29,8 @@ import com.pathplanner.lib.PathPoint;
  */
 public class RobotContainer {
         // The robot's subsystems
+        private final DriveSubsystem m_robotDrive = new DriveSubsystem();
+        private boolean isFieldRelative = false;
         private final LimeLight m_limeLight = new LimeLight(this);
         private final DriveSubsystem m_robotDrive = new DriveSubsystem(m_limeLight);
 
@@ -45,10 +46,6 @@ public class RobotContainer {
                 isFieldRelative = !isFieldRelative;
         }
 
-        private void toggleTrackingObject() {
-                isTrackingObject = !isTrackingObject;
-        }
-
         /**
          * The container for the robot. Contains subsystems, OI devices, and commands.
          */
@@ -58,6 +55,18 @@ public class RobotContainer {
 
                 // Configure default commands
                 m_robotDrive.setDefaultCommand(
+                                // The left stick controls translation of the robot.
+                                // Turning is controlled by the X axis of the right stick.
+                                new RunCommand(
+                                                () -> m_robotDrive.drive(
+                                                                -MathUtil.applyDeadband(m_driverController.getLeftY()/2,
+                                                                                OIConstants.kDriveDeadband),
+                                                                -MathUtil.applyDeadband(m_driverController.getLeftX()/2,
+                                                                                OIConstants.kDriveDeadband),
+                                                                -MathUtil.applyDeadband(m_driverController.getRightX()/2,
+                                                                                OIConstants.kDriveDeadband),
+                                                                true, true),
+                                                m_robotDrive));
                         // The left stick controls translation of the robot.
                         // Turning is controlled by the X axis of the right stick.
                         new RunCommand(
@@ -72,6 +81,29 @@ public class RobotContainer {
                                 m_robotDrive));
         }
 
+    /**
+     * Use this method to define your button->command mappings. Buttons can be
+     * created by
+     * instantiating a {@link edu.wpi.first.wpilibj.GenericHID} or one of its
+     * subclasses ({@link
+     * edu.wpi.first.wpilibj.Joystick} or {@link XboxController}), and then calling
+     * passing it to a
+     * {@link JoystickButton}.
+     */
+    private void configureButtonBindings() {
+        new JoystickButton(m_driverController, Button.kB.value)
+                .whileTrue(new RunCommand(
+                        () -> m_robotDrive.setX(),
+                        m_robotDrive));
+        
+        new JoystickButton(m_driverController, Button.kA.value)
+                .whileTrue(new RunCommand(
+                        () -> m_robotDrive.setZeros(),
+                        m_robotDrive));
+
+        new JoystickButton(m_driverController, Button.kY.value)
+        .toggleOnTrue(new RunCommand(
+                () -> toggleFieldRelative()));
         /**
          * Use this method to define your button->command mappings. Buttons can be
          * created by
@@ -92,14 +124,10 @@ public class RobotContainer {
                                                 () -> toggleFieldRelative()));
 
                 new JoystickButton(m_driverController, Button.kX.value)
-                        .toggleOnTrue(new InstantCommand(
-                                () -> toggleTrackingObject()));
-                                
-                new JoystickButton(m_driverController, Button.kA.value)
-                        .onTrue(new InstantCommand(
-                                () -> m_robotDrive.zeroHeading(), 
+                        .toggleOnTrue(new RunCommand(
+                                () -> m_robotDrive.setOffsetZeros(), 
                                 m_robotDrive));
-        }
+    }
 
         /**
          * Use this to pass the autonomous command to the main {@link Robot} class.
