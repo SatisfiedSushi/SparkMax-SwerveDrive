@@ -139,11 +139,14 @@ public final class Constants {
   public static final class NeoMotorConstants {
     public static final double kFreeSpeedRpm = 5676;
   }
-<<<<<<< HEAD
 
   public static final class LimelightConstants {
     public static final double kLLHeight = Units.inchesToMeters(24.5);    
   }
-=======
->>>>>>> parent of 8ec2f31... Merge remote-tracking branch 'refs/remotes/origin/main'
+
+  public static final class shapeSizes {
+    public static final double squareSize = Units.inchesToMeters(24);
+    public static final double figureEightSize = Units.inchesToMeters(24);
+    public static final double starSize = Units.inchesToMeters(24);
+  }
 }
