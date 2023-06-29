@@ -34,6 +34,14 @@ public final class Constants {
     public static final double kMagnitudeSlewRate = 1.8; // percent per second (1 = 100%)
     public static final double kRotationalSlewRate = 2.0; // percent per second (1 = 100%)
 
+    public static final double kTrackingP = 0.02; //0.02
+    public static final double kTrackingI = 0.0; //0.003
+    public static final double kTrackingD = 0.0; //0.001
+    public static final double kTrackingTolerance = 0.01;
+    public static final double kTrackingToleranceDerivative = 6;
+    public static final double kTrackingIntergratorRangeMin = -0.7;
+    public static final double kTrackingIntergratorRangeMax = 0.7;
+
     // Chassis configuration
     public static final double kTrackWidth = Units.inchesToMeters(18);
     // Distance between centers of right and left wheels on robot

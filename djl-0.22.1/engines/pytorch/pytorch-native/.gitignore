@@ -1,4 +1,0 @@
-cmake-build-*/
-libtorch
-libtorch_android
-jnilib/

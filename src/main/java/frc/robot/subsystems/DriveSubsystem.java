@@ -62,6 +62,7 @@ public class DriveSubsystem extends SubsystemBase {
 
   private boolean isFieldRelative = true;
   private boolean isTrackingObject = false;
+  private boolean isAimAssist = true;
 
   // Slew rate filter variables for controlling lateral acceleration
   private double m_currentRotation = 0.0;
@@ -72,6 +73,7 @@ public class DriveSubsystem extends SubsystemBase {
   private SlewRateLimiter m_rotLimiter = new SlewRateLimiter(DriveConstants.kRotationalSlewRate);
   private double m_prevTime = WPIUtilJNI.now() * 1e-6;
 
+  PIDController trackingPID = new PIDController(DriveConstants.kTrackingP, DriveConstants.kTrackingI, DriveConstants.kTrackingD);
 
   // Odometry class for tracking robot pose
   SwerveDriveOdometry m_odometry = new SwerveDriveOdometry(
@@ -89,6 +91,9 @@ public class DriveSubsystem extends SubsystemBase {
     this.LL = LL;
     zeroHeading();
     //m_gyro.zeroYaw();
+
+    trackingPID.setTolerance(DriveConstants.kTrackingTolerance);
+    trackingPID.setIntegratorRange(DriveConstants.kTrackingIntergratorRangeMin, DriveConstants.kTrackingIntergratorRangeMax);
   }
 
   public void updateShuffleBoard() {
@@ -150,7 +155,7 @@ public class DriveSubsystem extends SubsystemBase {
    */
   public void drive(double xSpeed, double ySpeed, double rot, boolean fieldRelative, boolean rateLimit, boolean trackingObject) {
 
-    LL.setPipeline(5.0);
+    LL.setPipeline(6.0);
 
     this.isFieldRelative = fieldRelative;
     this.isTrackingObject = trackingObject;
@@ -196,12 +201,12 @@ public class DriveSubsystem extends SubsystemBase {
 
       xSpeedCommanded = m_currentTranslationMag * Math.cos(m_currentTranslationDir);
       ySpeedCommanded = m_currentTranslationMag * Math.sin(m_currentTranslationDir);
-      m_currentRotation = m_rotLimiter.calculate(trackingObject ? calculateTrackingAngularVelocity() : rot);
+      m_currentRotation = m_rotLimiter.calculate(trackingObject ? calculateTrackingAngularVelocity(rot) : rot);
 
     } else {
       xSpeedCommanded = xSpeed;
       ySpeedCommanded = ySpeed;
-      m_currentRotation = m_rotLimiter.calculate(trackingObject ? calculateTrackingAngularVelocity() : rot);
+      m_currentRotation = m_rotLimiter.calculate(trackingObject ? calculateTrackingAngularVelocity(rot) : rot);
     }
 
     // Convert the commanded speeds into the correct units for the drivetrain
@@ -222,8 +227,8 @@ public class DriveSubsystem extends SubsystemBase {
     m_rearRight.setDesiredState(swerveModuleStates[3]);
   }
 
-  public double calculateTrackingAngularVelocity() {
-    if (LL.getXAngle() != 0 && Math.abs(LL.getXAngle()) >= 1) {
+  public double calculateTrackingAngularVelocity(double rot) {
+    /*if (LL.getXAngle() != 0 && Math.abs(LL.getXAngle()) >= 1) {
       double speed = 0.03; // between 0 amd 1
       double direction = (-LL.getXAngle()) / Math.abs(LL.getXAngle());
       double scaleFactor = (Math.abs(LL.getXAngle())) * speed;
@@ -234,6 +239,17 @@ public class DriveSubsystem extends SubsystemBase {
       return direction * scaleFactor;
     }
     
+    return 0;*/
+    if (isAimAssist) {
+      if (rot != 0) {
+        return rot;
+      }
+    }
+
+    if (LL.getXAngle() != 0) {
+      return trackingPID.calculate(LL.getXAngle(), 0);
+    }
+
     return 0;
   }
 
