@@ -88,16 +88,16 @@ public class RobotContainer {
                         m_robotDrive));
         
         new JoystickButton(m_driverController, Button.kA.value)
-                .whileTrue(new RunCommand(
-                        () -> m_robotDrive.setZeros(),
+                .toggleOnTrue(new InstantCommand(
+                        () -> m_robotDrive.zeroHeading(),
                         m_robotDrive));
 
         new JoystickButton(m_driverController, Button.kY.value)
-                .toggleOnTrue(new RunCommand(
+                .toggleOnTrue(new InstantCommand(
                         () -> toggleFieldRelative()));
 
         new JoystickButton(m_driverController, Button.kX.value)
-                .toggleOnTrue(new RunCommand(
+                .toggleOnTrue(new InstantCommand(
                         () -> toggleTracking()));
     }
         

@@ -155,7 +155,7 @@ public class DriveSubsystem extends SubsystemBase {
    */
   public void drive(double xSpeed, double ySpeed, double rot, boolean fieldRelative, boolean rateLimit, boolean trackingObject) {
 
-    LL.setPipeline(6.0);
+    LL.setPipeline(7.0);
 
     this.isFieldRelative = fieldRelative;
     this.isTrackingObject = trackingObject;

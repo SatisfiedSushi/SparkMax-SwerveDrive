@@ -88,6 +88,10 @@ public class LimeLight extends SubsystemBase {
     setPipeline(targetedAprilTagId + 1);
   }
 
+  public static double calculateDistanceToTargetMeters(double cameraHeightMeters, double targetHeightMeters, double cameraPitchRadians, double targetPitchRadians) {
+    return (targetHeightMeters - cameraHeightMeters) / Math.tan(cameraPitchRadians + targetPitchRadians);
+  }
+
   public double calculateDistance(double targetHeight) {
 
     double distance = 0;
@@ -132,7 +136,7 @@ public class LimeLight extends SubsystemBase {
     }
 
     //20.32 accounts for the distance from the limelight to the center of the robot
-    return distance + 20.32; //returns calculated distance in inches from limelight to reflective tape target or 0 if no valid targets are seen by Limelight camera (i.e., tv=0)
+    return distance; //returns calculated distance in inches from limelight to reflective tape target or 0 if no valid targets are seen by Limelight camera (i.e., tv=0)
   }
 
   public void updateDashboard() {
@@ -141,11 +145,13 @@ public class LimeLight extends SubsystemBase {
     SmartDashboard.putNumber("LimelightArea", getArea());
     SmartDashboard.putNumber("CurrentTargetedTagID", getTagID());
     SmartDashboard.putNumber("CurrentPipline", getPipline());
+    SmartDashboard.putNumber("Object Distance", calculateDistance(630)); //mm
   }
 
   @Override
   public void periodic() {
     // This method will be called once per scheduler
+    updateDashboard();
   }
 
   @Override
