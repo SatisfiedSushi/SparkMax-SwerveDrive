@@ -160,6 +160,10 @@ public final class Constants {
         public static final double kFreeSpeedRpm = 5676;
     }
 
+    public static final class Neo550MotorConstants {
+        public static final double kFreeSpeedRpm = 11000;
+    }
+
     public static final class LimelightConstants {
         public static final double kLLHeight = Units.inchesToMeters(24.5);
         public static final double kLLPitch = Units.degreesToRadians(0);
@@ -176,6 +180,22 @@ public final class Constants {
         public static final int kShootMotorCurrentLimit = 30; // amps
         public static final int kRotateMotorCurrentLimit = 20; // amps
         public static final int kIntakeMotorCurrentLimit = 20; // amps
+
+        public static final IdleMode kShootMotorIdleMode = IdleMode.kCoast;
+        public static final IdleMode kRotateMotorIdleMode = IdleMode.kBrake;
+        public static final IdleMode kIntakeMotorIdleMode = IdleMode.kBrake;
+
+        // 8.3521:1 (2 stage UltraPlanetary Cartridge 3:1) -> 12:70 (spur to spur)
+        public static final double kRotateMotorReduction = 52.5;
+        public static final double kTurretDiameterMeters = Units.inchesToMeters(7.2);
+        public static final double kTurretCircumferenceMeters = Units.inchesToMeters(kTurretDiameterMeters * Math.PI);
+        public static final double kTurretMotorFreeSpeedRps = (Neo550MotorConstants.kFreeSpeedRpm
+                / kTurretCircumferenceMeters)
+                / kRotateMotorReduction;
+
+        public static final double kRotateEncoderPositionFactor = (kTurretCircumferenceMeters / kRotateMotorReduction); // meters
+        public static final double kRotateEncoderVelocityFactor = (kTurretCircumferenceMeters / kRotateMotorReduction)
+                / 60.0; // meters per second
     }
 
     public static final class shapeSizes {
