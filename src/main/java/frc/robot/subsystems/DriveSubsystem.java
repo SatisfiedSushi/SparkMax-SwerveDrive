@@ -58,12 +58,13 @@ public class DriveSubsystem extends SubsystemBase {
             DriveConstants.kBackRightChassisAngularOffset);
 
     // The gyro sensor
-    private final AHRS m_gyro = new AHRS(SPI.Port.kMXP);
+    private final AHRS m_gyro = new AHRS(SPI.Port.kMXP); // navX
 
     private boolean isFieldRelative = true;
-    private boolean isTrackingObject = false;
+    private boolean isTrackingObject = false; // allows for rotation to be controlled by the limelight
     private boolean isAvoidingObject = false;
-    private boolean isAimAssist = true;
+    private boolean isAimAssist = true; // allows for rotation to be controlled by the controller and the limelight
+                                        // //requires isTrackingObject to be true
 
     // Slew rate filter variables for controlling lateral acceleration
     private double m_currentRotation = 0.0;
@@ -76,6 +77,8 @@ public class DriveSubsystem extends SubsystemBase {
 
     PIDController trackingPID = new PIDController(DriveConstants.kTrackingP, DriveConstants.kTrackingI,
             DriveConstants.kTrackingD);
+    PIDController avoidingPID = new PIDController(DriveConstants.kAvoidingP, DriveConstants.kAvoidingI,
+            DriveConstants.kAvoidingD);
 
     // Odometry class for tracking robot pose
     SwerveDriveOdometry m_odometry = new SwerveDriveOdometry(
@@ -168,13 +171,20 @@ public class DriveSubsystem extends SubsystemBase {
         double xSpeed = _xSpeed;
         double ySpeed = _ySpeed;
 
-        if (avoidingObject
-                && LL.calculateDistanceToTargetMeters(/* finish */) <= LimelightConstants.kMinObjectAvoidanceDistance
+        if (avoidingObject && LL.calculateDistanceToTargetMeters(
+                LimelightConstants.kLLHeight,
+                LimelightConstants.kObjectHeight,
+                LimelightConstants.kLLPitch,
+                LimelightConstants.kObjectPitch) <= LimelightConstants.kMinObjectAvoidanceDistance
                         + DriveConstants.kAvoidingTolerance) {
-            if (Math.max(xSpeed, ySpeed) == xSpeed) {
-                ySpeed = 0;
+            if (fieldRelative) {
+                if (Math.max(xSpeed, ySpeed) == xSpeed) {
+                    ySpeed = calculateObjectAvoidanceVelocity(ySpeed);
+                } else {
+                    xSpeed = calculateObjectAvoidanceVelocity(xSpeed);
+                }
             } else {
-                xSpeed = 0;
+                ySpeed = calculateObjectAvoidanceVelocity(ySpeed);
             }
         }
 
@@ -272,6 +282,11 @@ public class DriveSubsystem extends SubsystemBase {
         }
 
         return 0;
+    }
+
+    public double calculateObjectAvoidanceVelocity(double velocity) {
+        return avoidingPID.calculate(LL.calculateDistanceToTargetMeters(velocity, velocity, velocity, velocity),
+                LimelightConstants.kMinObjectAvoidanceDistance);
     }
 
     /**
