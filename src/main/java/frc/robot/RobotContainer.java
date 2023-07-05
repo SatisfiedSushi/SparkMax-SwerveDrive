@@ -30,7 +30,7 @@ import com.pathplanner.lib.PathPoint;
  */
 public class RobotContainer {
         // The robot's subsystems
-        private final LimeLight m_limeLight = new LimeLight();
+        private final LimeLight m_limeLight = new LimeLight(this);
         private final DriveSubsystem m_robotDrive = new DriveSubsystem(m_limeLight);
 
         private boolean isFieldRelative = true;
