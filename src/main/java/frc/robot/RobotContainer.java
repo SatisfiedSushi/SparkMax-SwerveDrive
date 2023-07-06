@@ -42,6 +42,7 @@ public class RobotContainer {
     double squareSize = Constants.PPvar.squareSize;
     double figureEightSize = Constants.PPvar.figureEightSize;
     double starSize = Constants.PPvar.starSize;
+        private boolean isTrackingGoal = false;
 
 
     // The driver's controller
