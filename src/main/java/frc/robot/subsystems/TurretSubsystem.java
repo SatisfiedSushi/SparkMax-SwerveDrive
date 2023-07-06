@@ -1,14 +1,18 @@
 package frc.robot.subsystems;
 
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkMaxPIDController;
 
+import frc.robot.Constants;
 import frc.robot.Constants.TurretConstants;
 
 public class TurretSubsystem extends SubsystemBase {
+    private LimeLight limeLight;
+
     private final CANSparkMax shootMotor;
     private final CANSparkMax rotateMotor;
     private final CANSparkMax intakeMotor;
@@ -17,22 +21,18 @@ public class TurretSubsystem extends SubsystemBase {
     private final RelativeEncoder rotateEncoder;
     private final RelativeEncoder intakeEncoder;
 
-    private final SparkMaxPIDController shootPIDController;
-    private final SparkMaxPIDController rotatePIDController;
-    private final SparkMaxPIDController intakePIDController;
-
     public TurretSubsystem() {
-        shootMotor = new CANSparkMax(1, CANSparkMax.MotorType.kBrushless);
-        rotateMotor = new CANSparkMax(2, CANSparkMax.MotorType.kBrushless);
-        intakeMotor = new CANSparkMax(3, CANSparkMax.MotorType.kBrushless);
+        shootMotor = new CANSparkMax(Constants.TurretConstants.kShootMotorCanID, CANSparkMax.MotorType.kBrushless);
+        rotateMotor = new CANSparkMax(Constants.TurretConstants.kRotateMotorCanID, CANSparkMax.MotorType.kBrushless);
+        intakeMotor = new CANSparkMax(Constants.TurretConstants.kIntakeMotorCanID, CANSparkMax.MotorType.kBrushless);
 
         shootMotor.restoreFactoryDefaults();
         rotateMotor.restoreFactoryDefaults();
         intakeMotor.restoreFactoryDefaults();
 
-        shootMotor.setInverted(false); // TODO: Check if this is correct
-        rotateMotor.setInverted(false); // TODO: Check if this is correct
-        intakeMotor.setInverted(false); // TODO: Check if this is correct
+        shootMotor.setInverted(true); 
+        rotateMotor.setInverted(false); // Personal preference
+        intakeMotor.setInverted(false);
 
         shootMotor.setSmartCurrentLimit(TurretConstants.kShootMotorCurrentLimit);
         rotateMotor.setSmartCurrentLimit(TurretConstants.kRotateMotorCurrentLimit);
@@ -46,12 +46,25 @@ public class TurretSubsystem extends SubsystemBase {
         rotateEncoder = rotateMotor.getEncoder();
         intakeEncoder = intakeMotor.getEncoder();
 
-        shootPIDController = shootMotor.getPIDController();
-        rotatePIDController = rotateMotor.getPIDController();
-        intakePIDController = intakeMotor.getPIDController();
-        shootPIDController.setFeedbackDevice(shootEncoder);
-        rotatePIDController.setFeedbackDevice(rotateEncoder);
-        intakePIDController.setFeedbackDevice(intakeEncoder);
+        PIDController turretPID = new PIDController(TurretConstants.turnP, 
+                                                    TurretConstants.turnI, 
+                                                    TurretConstants.turnD);
+    }
 
+
+    public void teleopTurret(Double rotate, Boolean shoot){
+        rotateMotor.set(rotate);
+        if(shoot){
+            shootMotor.set(1);
+            intakeMotor.set(1);
+        } else {
+            shootMotor.set(0);
+        }
+    }
+
+    public void autoTurret(){
+        if (limeLight.getXAngle() != 0) {
+            return turretPID.calculate(limeLight.getXAngle(), 0);
+        }
     }
 }
