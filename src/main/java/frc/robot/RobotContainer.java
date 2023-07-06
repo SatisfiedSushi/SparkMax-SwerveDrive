@@ -93,7 +93,7 @@ public class RobotContainer {
          */
         private void configureButtonBindings() {
                 new JoystickButton(m_driverController, Button.kB.value)
-                                .whileTrue(new RunCommand(
+                                .toggleOnTrue(new InstantCommand(
                                                 () -> toggleObjectAvoidance()));
 
                 new JoystickButton(m_driverController, Button.kA.value)
@@ -108,6 +108,18 @@ public class RobotContainer {
                 new JoystickButton(m_driverController, Button.kX.value)
                                 .toggleOnTrue(new InstantCommand(
                                                 () -> toggleTracking()));
+
+                /*
+                 * new JoystickButton(m_driverController, Button.kRightBumper.value)
+                 * .whileTrue(new RunCommand(
+                 * () -> m_robotDrive.setCounterMovement(1),
+                 * m_robotDrive));
+                 * 
+                 * new JoystickButton(m_driverController, Button.kLeftBumper.value)
+                 * .whileTrue(new RunCommand(
+                 * () -> m_robotDrive.setCounterMovement(0),
+                 * m_robotDrive));
+                 */
         }
 
         /**

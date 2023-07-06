@@ -158,7 +158,7 @@ public class LimeLight extends SubsystemBase {
      * @return distance in inches from limelight to reflective tape target or -1 if
      *         no valid targets are seen by Limelight camera (i.e., tv=0).
      */
-    public double calculateDistance(double targetHeight) {
+    public double calculateDistance() {
 
         double distance = 0;
 
@@ -189,35 +189,37 @@ public class LimeLight extends SubsystemBase {
 
         // Using known variables (angles, heights, etc.)
         // From limelight documentation
-        /*
-         * if (hasTarget()) {
-         * distance = -1; //-1 means the limelight does not see a target
-         * } else { //calculate the distance based on the area of the target and some
-         * constants that we found experimentally. This is not perfect, but it works for
-         * our robot.
-         * double angleToGoalDegrees = Constants.LIMELIGHT_MOUNT_ANGLE + getYAngle();
-         * double angleToGoalRadians = angleToGoalDegrees * (3.14159 / 180.0);
-         * 
-         * distance = (Constants.LIMELIGHT_GOAL_HEIGHT -
-         * Constants.LIMELIGHT_LENS_HEIGHT)/Math.tan(angleToGoalRadians);
-         * }
-         */
+
+        if (!hasTarget()) {
+            distance = -1; // -1 means the limelight does not see a target
+        } else {
+            double angleToGoalDegrees = getYAngle();
+            // double angleToGoalRadians = Math.toRadians(angleToGoalDegrees);
+
+            distance = (LimelightConstants.kObjectHeight - LimelightConstants.kLLHeight) / Math.tan(angleToGoalDegrees);
+        }
 
         // Distance calculation from
         // https://www.chiefdelphi.com/t/calculating-distance-to-vision-target/387183/6
-        if (hasTarget()) {
-            distance = 0; // -1 means the limelight does not see a target
-        } else {
-            double z = 1 / (Math.sqrt(1 + Math.pow(Math.tan(getYAngle()), 2) + Math.pow(Math.tan(getXAngle()), 2)));
-            double y = getYAngle()
-                    / (Math.sqrt(1 + Math.pow(Math.tan(getYAngle()), 2) + Math.pow(Math.tan(getXAngle()), 2)));
-            double x = getXAngle()
-                    / (Math.sqrt(1 + Math.pow(Math.tan(getYAngle()), 2) + Math.pow(Math.tan(getXAngle()), 2)));
-
-            double scaleFactor = (targetHeight - LimelightConstants.kLLHeight) / y;
-
-            distance = Math.sqrt(Math.pow(x, 2) + Math.pow(z, 2)) * scaleFactor;
-        }
+        /*
+         * if (hasTarget()) {
+         * distance = 0; // -1 means the limelight does not see a target
+         * } else {
+         * double z = 1 / (Math.sqrt(1 + Math.pow(Math.tan(getYAngle()), 2) +
+         * Math.pow(Math.tan(getXAngle()), 2)));
+         * double y = getYAngle()
+         * / (Math.sqrt(1 + Math.pow(Math.tan(getYAngle()), 2) +
+         * Math.pow(Math.tan(getXAngle()), 2)));
+         * double x = getXAngle()
+         * / (Math.sqrt(1 + Math.pow(Math.tan(getYAngle()), 2) +
+         * Math.pow(Math.tan(getXAngle()), 2)));
+         * 
+         * double scaleFactor = (LimelightConstants.kObjectHeight -
+         * LimelightConstants.kLLHeight) / y;
+         * 
+         * distance = Math.sqrt(Math.pow(x, 2) + Math.pow(z, 2)) * scaleFactor;
+         * }
+         */
 
         // 20.32 accounts for the distance from the limelight to the center of the robot
         return distance; // returns calculated distance in inches from limelight to reflective tape
@@ -233,8 +235,15 @@ public class LimeLight extends SubsystemBase {
         SmartDashboard.putNumber("LimelightArea", getArea());
         SmartDashboard.putNumber("CurrentTargetedTagID", getTagID());
         SmartDashboard.putNumber("CurrentPipline", getPipline());
-        // SmartDashboard.putNumber("Object Distance", calculateDistanceToTargetMeters(,
-        // 0.63, , 0)); //mm
+
+        SmartDashboard.putNumber("Object Distance", calculateDistanceToTargetMeters(
+                LimelightConstants.kLLHeight,
+                LimelightConstants.kObjectHeight,
+                LimelightConstants.kLLPitch,
+                Math.toRadians(this.getYAngle())));
+        // mm
+        // SmartDashboard.putNumber("Object Distance", calculateDistance());
+        // System.out.println("Object Distance" + calculateDistance(getYAngle()));
     }
 
     @Override

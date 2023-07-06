@@ -106,6 +106,7 @@ public class DriveSubsystem extends SubsystemBase {
         SmartDashboard.putNumber("Gyro Angle", Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset);
         SmartDashboard.putBoolean("Field Relative", isFieldRelative);
         SmartDashboard.putBoolean("Tracking Object", isTrackingObject);
+        SmartDashboard.putBoolean("Avoiding Object", isAvoidingObject);
     }
 
     @Override
@@ -171,12 +172,7 @@ public class DriveSubsystem extends SubsystemBase {
         double xSpeed = _xSpeed;
         double ySpeed = _ySpeed;
 
-        if (avoidingObject && LL.calculateDistanceToTargetMeters(
-                LimelightConstants.kLLHeight,
-                LimelightConstants.kObjectHeight,
-                LimelightConstants.kLLPitch,
-                LimelightConstants.kObjectPitch) <= LimelightConstants.kMinObjectAvoidanceDistance
-                        + DriveConstants.kAvoidingTolerance) {
+        if (avoidingObject) {
             if (fieldRelative) {
                 if (Math.max(xSpeed, ySpeed) == xSpeed) {
                     ySpeed = calculateObjectAvoidanceVelocity(ySpeed);
@@ -184,7 +180,7 @@ public class DriveSubsystem extends SubsystemBase {
                     xSpeed = calculateObjectAvoidanceVelocity(xSpeed);
                 }
             } else {
-                ySpeed = calculateObjectAvoidanceVelocity(ySpeed);
+                xSpeed = calculateObjectAvoidanceVelocity(_xSpeed);
             }
         }
 
@@ -285,8 +281,25 @@ public class DriveSubsystem extends SubsystemBase {
     }
 
     public double calculateObjectAvoidanceVelocity(double velocity) {
-        return avoidingPID.calculate(LL.calculateDistanceToTargetMeters(velocity, velocity, velocity, velocity),
-                LimelightConstants.kMinObjectAvoidanceDistance);
+        if (LL.getYAngle() >= 10) {
+            return -(LL.getYAngle() - 10) / 10;
+        }
+
+        return velocity;
+    }
+
+    public void setCounterMovement(int setting) {
+        if (setting == 1) { // getting pushed from the front
+            m_frontLeft.setDesiredState(new SwerveModuleState(0, Rotation2d.fromDegrees(0)));
+            m_frontRight.setDesiredState(new SwerveModuleState(0, Rotation2d.fromDegrees(0)));
+            m_rearLeft.setDesiredState(new SwerveModuleState(0, Rotation2d.fromDegrees(0)));
+            m_rearRight.setDesiredState(new SwerveModuleState(0, Rotation2d.fromDegrees(0)));
+        } else {
+            m_frontLeft.setDesiredState(new SwerveModuleState(0, Rotation2d.fromDegrees(90)));
+            m_frontRight.setDesiredState(new SwerveModuleState(0, Rotation2d.fromDegrees(90)));
+            m_rearLeft.setDesiredState(new SwerveModuleState(0, Rotation2d.fromDegrees(90)));
+            m_rearRight.setDesiredState(new SwerveModuleState(0, Rotation2d.fromDegrees(90)));
+        }
     }
 
     /**

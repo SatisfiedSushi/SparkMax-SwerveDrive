@@ -132,9 +132,9 @@ public final class Constants {
     public static final IdleMode kDrivingMotorIdleMode = IdleMode.kBrake;
     public static final IdleMode kTurningMotorIdleMode = IdleMode.kBrake;
 
-    public static final int kDrivingMotorCurrentLimit = 30; // amps
-    public static final int kTurningMotorCurrentLimit = 20; // amps
-  }
+        public static final int kDrivingMotorCurrentLimit = 30; // amps
+        public static final int kTurningMotorCurrentLimit = 15; // amps
+    }
 
   public static final class OIConstants {
     public static final int kDriverControllerPort = 0;
@@ -164,13 +164,12 @@ public final class Constants {
     public static final double kFreeSpeedRpm = 11000;
   }
 
-  public static final class LimelightConstants {
-    public static final double kLLHeight = Units.inchesToMeters(24.5);
-    public static final double kLLPitch = Units.degreesToRadians(0);
-    public static final double kMinObjectAvoidanceDistance = Units.inchesToMeters(12);
-    public static final double kObjectHeight = Units.inchesToMeters(12);
-    public static final double kObjectPitch = Units.degreesToRadians(0);
-  }
+    public static final class LimelightConstants {
+        public static final double kLLHeight = Units.inchesToMeters(10);
+        public static final double kLLPitch = Units.degreesToRadians(3);
+        public static final double kMinObjectAvoidanceDistance = Units.inchesToMeters(12);
+        public static final double kObjectHeight = Units.inchesToMeters(34.5);
+    }
 
   public static final class TurretConstants {
     public static final int kShootMotorCanID = 10; // neo
