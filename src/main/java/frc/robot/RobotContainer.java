@@ -30,7 +30,7 @@ import com.pathplanner.lib.PathPoint;
  */
 public class RobotContainer {
         // The robot's subsystems
-        private final LimeLight m_limeLight = new LimeLight(this);
+        private final LimeLight m_limeLight = new LimeLight();
         private final DriveSubsystem m_robotDrive = new DriveSubsystem(m_limeLight);
 
         private boolean isFieldRelative = true;
@@ -155,12 +155,12 @@ public class RobotContainer {
                                 new PathConstraints(0.5, 0.2),
                                 new PathPoint(new Translation2d(0, 0), Rotation2d.fromDegrees(0),
                                                 Rotation2d.fromDegrees(0)),
-                                new PathPoint(new Translation2d(0, Constants.shapeSizes.squareSize),
+                                new PathPoint(new Translation2d(0, Constants.PPvar.squareSize),
                                                 Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0)),
-                                new PathPoint(new Translation2d(-Constants.shapeSizes.squareSize,
-                                                Constants.shapeSizes.squareSize), Rotation2d.fromDegrees(0),
+                                new PathPoint(new Translation2d(-Constants.PPvar.squareSize,
+                                                Constants.PPvar.squareSize), Rotation2d.fromDegrees(0),
                                                 Rotation2d.fromDegrees(0)),
-                                new PathPoint(new Translation2d(-Constants.shapeSizes.squareSize, 0),
+                                new PathPoint(new Translation2d(-Constants.PPvar.squareSize, 0),
                                                 Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0)),
                                 new PathPoint(new Translation2d(0, 0), Rotation2d.fromDegrees(0),
                                                 Rotation2d.fromDegrees(0)));
@@ -171,11 +171,11 @@ public class RobotContainer {
                                 new PathConstraints(4, 3),
                                 new PathPoint(new Translation2d(0, 0), Rotation2d.fromDegrees(45),
                                                 Rotation2d.fromDegrees(45)),
-                                new PathPoint(new Translation2d(Constants.shapeSizes.figureEightSize / 2, 0),
+                                new PathPoint(new Translation2d(Constants.PPvar.figureEightSize / 2, 0),
                                                 Rotation2d.fromDegrees(-90), Rotation2d.fromDegrees(-90)),
                                 new PathPoint(new Translation2d(0, 0), Rotation2d.fromDegrees(-45),
                                                 Rotation2d.fromDegrees(-45)),
-                                new PathPoint(new Translation2d(-Constants.shapeSizes.figureEightSize / 2, 0),
+                                new PathPoint(new Translation2d(-Constants.PPvar.figureEightSize / 2, 0),
                                                 Rotation2d.fromDegrees(-90), Rotation2d.fromDegrees(-90)),
                                 new PathPoint(new Translation2d(0, 0), Rotation2d.fromDegrees(45),
                                                 Rotation2d.fromDegrees(45)));
