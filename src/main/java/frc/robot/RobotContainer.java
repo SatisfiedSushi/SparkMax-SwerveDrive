@@ -7,6 +7,7 @@ package frc.robot;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.XboxController.Button;
 import frc.robot.Constants.OIConstants;
@@ -29,85 +30,89 @@ import com.pathplanner.lib.PathPoint;
  * (including subsystems, commands, and button mappings) should be declared here.
  */
 public class RobotContainer {
-        // The robot's subsystems
-        private final LimeLight m_limeLight = new LimeLight();
-        private final DriveSubsystem m_robotDrive = new DriveSubsystem(m_limeLight);
+    // The robot's subsystems
+    private final LimeLight m_limeLight = new LimeLight();
+    private final DriveSubsystem m_robotDrive = new DriveSubsystem(m_limeLight);
 
-        private boolean isFieldRelative = true;
-        private boolean isTrackingObject = false;
-        private boolean isAvoidingObject = false;
+    private boolean isFieldRelative = true;
+    private boolean isTrackingObject = false;
+    private boolean isAvoidingObject = false;
+	double maxVel = Constants.PPvar.maxVel;
+    double maxAccel = Constants.PPvar.maxAccel;
+    double squareSize = Constants.PPvar.squareSize;
+    double figureEightSize = Constants.PPvar.figureEightSize;
+    double starSize = Constants.PPvar.starSize;
 
-        // The driver's controller
-        XboxController m_driverController = new XboxController(OIConstants.kDriverControllerPort);
 
-        private void toggleFieldRelative() {
-                isFieldRelative = !isFieldRelative;
+    // The driver's controller
+    XboxController m_driverController = new XboxController(OIConstants.kDriverControllerPort);
+
+    private void toggleFieldRelative() {
+            isFieldRelative = !isFieldRelative;
+    }
+
+    private void toggleTracking() {
+            if (!isAvoidingObject) {
+                    isTrackingObject = !isTrackingObject;
+            }
+    }
+
+    private void toggleObjectAvoidance() {
+            isAvoidingObject = !isAvoidingObject;
+            isTrackingObject = true;
+    }
+
+    /**
+    * The container for the robot. Contains subsystems, OI devices, and commands.
+    */
+    public RobotContainer() {
+            // Configure the button bindings
+            configureButtonBindings();
+
+            // Configure default commands
+            m_robotDrive.setDefaultCommand(
+            // The left stick controls translation of the robot.
+            // Turning is controlled by the X axis of the right stick.
+            new RunCommand(() -> m_robotDrive.drive(
+                            -MathUtil.applyDeadband(m_driverController.getLeftY() / 2,
+                                                    OIConstants.kDriveDeadband),
+                            -MathUtil.applyDeadband(
+                                                    m_driverController.getLeftX() / 2,
+                                                    OIConstants.kDriveDeadband),
+                            -MathUtil.applyDeadband(
+                                                    m_driverController.getRightX() / 2,
+                                                    OIConstants.kDriveDeadband),
+                            isFieldRelative, true, isTrackingObject,
+                            isAvoidingObject),
+                            m_robotDrive));
         }
 
-        private void toggleTracking() {
-                if (!isAvoidingObject) {
-                        isTrackingObject = !isTrackingObject;
-                }
-        }
-
-        private void toggleObjectAvoidance() {
-                isAvoidingObject = !isAvoidingObject;
-                isTrackingObject = true;
-        }
-
-        /**
-         * The container for the robot. Contains subsystems, OI devices, and commands.
-         */
-        public RobotContainer() {
-                // Configure the button bindings
-                configureButtonBindings();
-
-                // Configure default commands
-                m_robotDrive.setDefaultCommand(
-                                // The left stick controls translation of the robot.
-                                // Turning is controlled by the X axis of the right stick.
-                                new RunCommand(
-                                                () -> m_robotDrive.drive(
-                                                                -MathUtil.applyDeadband(
-                                                                                m_driverController.getLeftY() / 2,
-                                                                                OIConstants.kDriveDeadband),
-                                                                -MathUtil.applyDeadband(
-                                                                                m_driverController.getLeftX() / 2,
-                                                                                OIConstants.kDriveDeadband),
-                                                                -MathUtil.applyDeadband(
-                                                                                m_driverController.getRightX() / 2,
-                                                                                OIConstants.kDriveDeadband),
-                                                                isFieldRelative, true, isTrackingObject,
-                                                                isAvoidingObject),
-                                                m_robotDrive));
-        }
-
-        /**
-         * Use this method to define your button->command mappings. Buttons can be
-         * created by
-         * instantiating a {@link edu.wpi.first.wpilibj.GenericHID} or one of its
-         * subclasses ({@link
-         * edu.wpi.first.wpilibj.Joystick} or {@link XboxController}), and then calling
-         * passing it to a
-         * {@link JoystickButton}.
-         */
-        private void configureButtonBindings() {
-                new JoystickButton(m_driverController, Button.kB.value)
+    /**
+     * Use this method to define your button->command mappings. Buttons can be
+     * created by
+     * instantiating a {@link edu.wpi.first.wpilibj.GenericHID} or one of its
+     * subclasses ({@link
+     * edu.wpi.first.wpilibj.Joystick} or {@link XboxController}), and then calling
+     * passing it to a
+     * {@link JoystickButton}.
+     */
+    private void configureButtonBindings() {
+        new JoystickButton(m_driverController, Button.kB.value)
                                 .toggleOnTrue(new InstantCommand(
-                                                () -> toggleObjectAvoidance()));
+									() -> toggleObjectAvoidance()));
 
-                new JoystickButton(m_driverController, Button.kA.value)
-                                .toggleOnTrue(new InstantCommand(
-                                                () -> m_robotDrive.zeroHeading(),
-                                                m_robotDrive));
+        new JoystickButton(m_driverController, Button.kA.value)
+                        .toggleOnTrue(new InstantCommand(
+                                    	() -> m_robotDrive.zeroHeading(),
+                                        m_robotDrive));
 
-                new JoystickButton(m_driverController, Button.kY.value)
-                                .toggleOnTrue(new InstantCommand(
-                                                () -> toggleFieldRelative()));
+    	new JoystickButton(m_driverController, Button.kY.value)
+                            .toggleOnTrue(new InstantCommand(
+                                        	() -> toggleFieldRelative()));
 
-                new JoystickButton(m_driverController, Button.kX.value)
-                                .toggleOnTrue(new InstantCommand(
-                                                () -> toggleTracking()));
+    	new JoystickButton(m_driverController, Button.kX.value)
+            			.toggleOnTrue(new InstantCommand(
+                        				() -> toggleTracking()));
 
                 /*
                  * new JoystickButton(m_driverController, Button.kRightBumper.value)
@@ -121,80 +126,88 @@ public class RobotContainer {
                  * m_robotDrive));
                  */
         }
+        
+    /**
+     * Use this to pass the autonomous command to the main {@link Robot} class.
+     *
+     * @return the command to run in autonomous
+     */
+	public Command getAutonomousCommand() {
+    /**
+    //one meter forward
+    PathPlannerTrajectory oneMeter = PathPlanner.loadPath("one meter", new PathConstraints(4, 3));
+    PathPlannerState oneMeterState = (PathPlannerState) oneMeter.sample(1.2);
+    System.out.println(oneMeterState.velocityMetersPerSecond);
+    return m_robotDrive.followTrajectoryCommand(oneMeter, true);
+    **/
 
-        /**
-         * Use this to pass the autonomous command to the main {@link Robot} class.
-         *
-         * @return the command to run in autonomous
-         */
-        public Command getAutonomousCommand() {
-                /**
-                 * //one meter forward
-                 * PathPlannerTrajectory oneMeter = PathPlanner.loadPath("one meter", new
-                 * PathConstraints(4, 3));
-                 * PathPlannerState oneMeterState = (PathPlannerState) oneMeter.sample(1.2);
-                 * System.out.println(oneMeterState.velocityMetersPerSecond);
-                 * return m_robotDrive.followTrajectoryCommand(oneMeter, true);
-                 **/
+    // Move forward 2 feet, turn 180 degrees, move forward 2 feet, reverse 2 feet
+    PathPlannerTrajectory task1 = PathPlanner.generatePath(
+                    new PathConstraints(0.5, 0.2),
+                    new PathPoint(new Translation2d(0, 0), Rotation2d.fromDegrees(0),
+                                    Rotation2d.fromDegrees(0)),
+                    new PathPoint(new Translation2d(0.61, 0), Rotation2d.fromDegrees(0),
+                                    Rotation2d.fromDegrees(0)),
+                    new PathPoint(new Translation2d(0, 0), Rotation2d.fromDegrees(0),
+                                    Rotation2d.fromDegrees(0)),
+                    new PathPoint(new Translation2d(0.61, 0), Rotation2d.fromDegrees(0),
+                                    Rotation2d.fromDegrees(0)));
+    // return m_robotDrive.followTrajectoryCommand(task1, true);
 
-                // Move forward 2 feet, turn 180 degrees, move forward 2 feet, reverse 2 feet
-                PathPlannerTrajectory task1 = PathPlanner.generatePath(
-                                new PathConstraints(0.5, 0.2),
-                                new PathPoint(new Translation2d(0, 0), Rotation2d.fromDegrees(0),
-                                                Rotation2d.fromDegrees(0)),
-                                new PathPoint(new Translation2d(0.61, 0), Rotation2d.fromDegrees(0),
-                                                Rotation2d.fromDegrees(0)),
-                                new PathPoint(new Translation2d(0, 0), Rotation2d.fromDegrees(0),
-                                                Rotation2d.fromDegrees(0)),
-                                new PathPoint(new Translation2d(0.61, 0), Rotation2d.fromDegrees(0),
-                                                Rotation2d.fromDegrees(0)));
-                // return m_robotDrive.followTrajectoryCommand(task1, true);
+    //square
+    PathPlannerTrajectory square = PathPlanner.generatePath(
+            new PathConstraints(maxVel, maxAccel),
+            new PathPoint(new Translation2d(0,0), 
+                          Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0)),
+            new PathPoint(new Translation2d(0, squareSize), 
+                          Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0)),
+            new PathPoint(new Translation2d(-squareSize, squareSize), 
+                          Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0)),
+            new PathPoint(new Translation2d(-squareSize, 0), 
+                          Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0)),
+            new PathPoint(new Translation2d(0, 0), 
+                          Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0))
+            );
+    //return m_robotDrive.followTrajectoryCommand(square, true);
 
-                // square
-                PathPlannerTrajectory square = PathPlanner.generatePath(
-                                new PathConstraints(0.5, 0.2),
-                                new PathPoint(new Translation2d(0, 0), Rotation2d.fromDegrees(0),
-                                                Rotation2d.fromDegrees(0)),
-                                new PathPoint(new Translation2d(0, Constants.PPvar.squareSize),
-                                                Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0)),
-                                new PathPoint(new Translation2d(-Constants.PPvar.squareSize,
-                                                Constants.PPvar.squareSize), Rotation2d.fromDegrees(0),
-                                                Rotation2d.fromDegrees(0)),
-                                new PathPoint(new Translation2d(-Constants.PPvar.squareSize, 0),
-                                                Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0)),
-                                new PathPoint(new Translation2d(0, 0), Rotation2d.fromDegrees(0),
-                                                Rotation2d.fromDegrees(0)));
-                // return m_robotDrive.followTrajectoryCommand(square, true);
+    //figure 8
+    PathPlannerTrajectory figureEight = PathPlanner.generatePath(
+            new PathConstraints(maxVel, maxAccel),
+            new PathPoint(new Translation2d(0, 0), 
+                          Rotation2d.fromDegrees(45), Rotation2d.fromDegrees(45)),
+            new PathPoint(new Translation2d(figureEightSize/2, 0),
+                          Rotation2d.fromDegrees(-90), Rotation2d.fromDegrees(-90)),
+            new PathPoint(new Translation2d(0, 0), 
+                          Rotation2d.fromDegrees(-45), Rotation2d.fromDegrees(-45)),
+            new PathPoint(new Translation2d(-figureEightSize/2, 0), 
+                          Rotation2d.fromDegrees(-90), Rotation2d.fromDegrees(-90)),
+            new PathPoint(new Translation2d( 0,0), 
+                          Rotation2d.fromDegrees(45), Rotation2d.fromDegrees(45))
+        );
+    //return m_robotDrive.followTrajectoryCommand(figureEight, true);
 
-                // figure 8
-                PathPlannerTrajectory figureEight = PathPlanner.generatePath(
-                                new PathConstraints(4, 3),
-                                new PathPoint(new Translation2d(0, 0), Rotation2d.fromDegrees(45),
-                                                Rotation2d.fromDegrees(45)),
-                                new PathPoint(new Translation2d(Constants.PPvar.figureEightSize / 2, 0),
-                                                Rotation2d.fromDegrees(-90), Rotation2d.fromDegrees(-90)),
-                                new PathPoint(new Translation2d(0, 0), Rotation2d.fromDegrees(-45),
-                                                Rotation2d.fromDegrees(-45)),
-                                new PathPoint(new Translation2d(-Constants.PPvar.figureEightSize / 2, 0),
-                                                Rotation2d.fromDegrees(-90), Rotation2d.fromDegrees(-90)),
-                                new PathPoint(new Translation2d(0, 0), Rotation2d.fromDegrees(45),
-                                                Rotation2d.fromDegrees(45)));
-                // return m_robotDrive.followTrajectoryCommand(figureEight, true);
+    //star
+    /**PathPlannerTrajectory star = PathPlanner.generatePath(
+            new PathConstraints(4, 3),
+            new PathPoint(new Translation2d(Constants.shapeSizes.figureEightSize*Math.sin(72),
+                                            Constants.shapeSizes.figureEightSize*Math.sin(72)),
+                                            Rotation2d.fromDegrees(72),
+                                            Rotation2d.fromDegrees(72)),
+            new PathPoint(new Translation2d(Constants.shapeSizes.figureEightSize*Math.sin(72),
+    );**/
 
-                // star
-                /**
-                 * PathPlannerTrajectory star = PathPlanner.generatePath(
-                 * new PathConstraints(4, 3),
-                 * new PathPoint(new
-                 * Translation2d(Constants.shapeSizes.figureEightSize*Math.sin(72),
-                 * Constants.shapeSizes.figureEightSize*Math.sin(72)),
-                 * Rotation2d.fromDegrees(72),
-                 * Rotation2d.fromDegrees(72)),
-                 * new PathPoint(new
-                 * Translation2d(Constants.shapeSizes.figureEightSize*Math.sin(72),
-                 * );
-                 **/
+    //PID tune
+    PathPlannerTrajectory pidTune = PathPlanner.generatePath(
+            new PathConstraints(maxVel, maxAccel),
+            new PathPoint(new Translation2d(0,0), 
+                          Rotation2d.fromDegrees(0), 
+                          Rotation2d.fromDegrees(0)),
 
-                return m_robotDrive.followTrajectoryCommand(task1, true);
-        }
+            new PathPoint(new Translation2d(Units.feetToMeters(2),0), 
+                          Rotation2d.fromDegrees(0), 
+                          Rotation2d.fromDegrees(0))
+                );
+
+    return m_robotDrive.followTrajectoryCommand(pidTune, true);
+}
 }

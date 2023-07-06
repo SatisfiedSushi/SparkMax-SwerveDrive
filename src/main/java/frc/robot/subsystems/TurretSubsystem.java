@@ -63,8 +63,5 @@ public class TurretSubsystem extends SubsystemBase {
     }
 
     public void autoTurret(){
-        if (limeLight.getXAngle() != 0) {
-            return turretPID.calculate(limeLight.getXAngle(), 0);
-        }
     }
 }
