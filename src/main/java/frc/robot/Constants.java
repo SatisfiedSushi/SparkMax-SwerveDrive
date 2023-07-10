@@ -206,7 +206,7 @@ public final class Constants {
     public static final double squareSize = Units.inchesToMeters(48);
     public static final double figureEightSize = Units.inchesToMeters(24);
     public static final double starSize = Units.inchesToMeters(24);
-    public static final double maxVel = 0.5;
-    public static final double maxAccel = 0.2;
+    public static final double maxVel = 0.00001;
+    public static final double maxAccel = 0.0000001;
   }
 }

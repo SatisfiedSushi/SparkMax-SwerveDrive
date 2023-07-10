@@ -11,6 +11,7 @@ import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.XboxController.Button;
 import frc.robot.Constants.OIConstants;
+import frc.robot.Constants.PPvar;
 import frc.robot.subsystems.DriveSubsystem;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -142,6 +143,9 @@ public class RobotContainer {
     return m_robotDrive.followTrajectoryCommand(oneMeter, true);
     **/
 
+	//90 deg
+	PathPlannerTrajectory ninetyDeg = PathPlanner.loadPath("New Path Copy", new PathConstraints(maxVel, maxAccel));
+
     // Move forward 2 feet, turn 180 degrees, move forward 2 feet, reverse 2 feet
     PathPlannerTrajectory task1 = PathPlanner.generatePath(
                     new PathConstraints(0.5, 0.2),
@@ -207,8 +211,20 @@ public class RobotContainer {
             new PathPoint(new Translation2d(Units.feetToMeters(2),0), 
                           Rotation2d.fromDegrees(0), 
                           Rotation2d.fromDegrees(0))
-                );
+    );
+        
+    //turn tune
+	PathPlannerTrajectory pidTurn = PathPlanner.generatePath(
+		new PathConstraints(maxVel, maxAccel),
+		new PathPoint(new Translation2d(0,0),
+						Rotation2d.fromDegrees(0),
+						Rotation2d.fromDegrees(0)),
 
-    return m_robotDrive.followTrajectoryCommand(pidTune, true);
+		new PathPoint(new Translation2d(0,0),
+						Rotation2d.fromDegrees(0),
+						Rotation2d.fromDegrees(90))
+	);
+
+    return m_robotDrive.followTrajectoryCommand(pidTurn, true);
 }
 }
