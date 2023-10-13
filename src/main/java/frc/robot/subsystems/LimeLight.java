@@ -4,7 +4,7 @@
 
 package frc.robot.subsystems;
 
-import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.math.geometry.*;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -12,8 +12,6 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import frc.robot.Constants.LimelightConstants;
-import frc.robot.Robot;
-import frc.robot.RobotContainer;
 
 public class LimeLight extends SubsystemBase {
     // NetworkTable fields
@@ -25,6 +23,11 @@ public class LimeLight extends SubsystemBase {
     NetworkTableEntry tid;
     NetworkTableEntry getpipe;
     NetworkTableEntry pipeline;
+    NetworkTableEntry camMode;
+    NetworkTableEntry botpose;
+    double[] botPoseArray;
+    double[] botTranslation;
+    double[] botRotation;
 
     // Other fields
     XboxController m_controller;
@@ -34,6 +37,7 @@ public class LimeLight extends SubsystemBase {
      */
     public LimeLight() {
         table = NetworkTableInstance.getDefault().getTable("limelight");
+
         tv = table.getEntry("tv");
         tx = table.getEntry("tx");
         ty = table.getEntry("ty");
@@ -41,6 +45,12 @@ public class LimeLight extends SubsystemBase {
         tid = table.getEntry("tid");
         getpipe = table.getEntry("getpipe");
         pipeline = table.getEntry("pipeline");
+        camMode = table.getEntry("camMode");
+        botpose = table.getEntry("botpose");
+
+        botPoseArray = botpose.getDoubleArray(new double[6]);
+        botTranslation = new double[]{botPoseArray[0], botPoseArray[1], botPoseArray[2]};
+        botRotation = new double[]{botPoseArray[3], botPoseArray[4], botPoseArray[5]};
     }
 
     /**
@@ -51,6 +61,49 @@ public class LimeLight extends SubsystemBase {
      */
     public double getXAngle() {
         return tx.getDouble(0.0);
+    }
+
+    public double[] getBotPose() {
+        botPoseArray = botpose.getDoubleArray(new double[6]);
+        return botpose.getDoubleArray(new double[6]);
+    }
+
+    public Translation2d getBotTranslation2d() {
+        return new Translation2d(
+                getBotTranslation()[0],
+                getBotTranslation()[2]
+        );
+    }
+
+    public Rotation2d getBotRotation2d() {
+        return new Rotation2d(
+                getBotRotation()[0],
+                getBotRotation()[1]
+        );
+    }
+
+    public Translation3d getBotTranslation3d() {
+        return new Translation3d(
+                getBotTranslation()[0],
+                getBotTranslation()[2],
+                getBotTranslation()[1]
+        );
+    }
+
+    public Rotation3d getBotRotation3d() {
+        return new Rotation3d(
+                getBotRotation()[0],
+                getBotRotation()[1],
+                getBotRotation()[2]
+        );
+    }
+
+    public Pose3d getBotPose3d() {
+        return new Pose3d(getBotTranslation3d(), getBotRotation3d());
+    }
+
+    public Pose2d getBotPose2d() {
+        return new Pose2d(getBotTranslation2d(), getBotRotation2d());
     }
 
     /**
@@ -113,6 +166,15 @@ public class LimeLight extends SubsystemBase {
     }
 
     /**
+     * Set cam mode to 0 for vision processing, 1 for driver camera.
+     *
+     * @param mode The cam mode to set.
+     */
+    public void setCamMode(double mode) {
+        camMode.setValue(mode);
+    }
+
+    /**
      * Set pipline number between 0-9.
      * 
      * @param targetedAprilTagId The targeted AprilTag ID to set
@@ -153,10 +215,6 @@ public class LimeLight extends SubsystemBase {
      * Deprecated method. Use
      * {@link #calculateDistanceToTargetMeters(double, double, double, double)}
      * instead.
-     * 
-     * @param targetHeight
-     * @return distance in inches from limelight to reflective tape target or -1 if
-     *         no valid targets are seen by Limelight camera (i.e., tv=0).
      */
     public double calculateDistance() {
 
@@ -226,6 +284,19 @@ public class LimeLight extends SubsystemBase {
                          // target or 0 if no valid targets are seen by Limelight camera (i.e., tv=0)
     }
 
+    // returns the pose2d of the robot according to the 3d coordinate system of the limelight
+
+
+    public double[] getBotTranslation() {
+        botTranslation = new double[]{getBotPose()[0], getBotPose()[1], getBotPose()[2]};
+        return botTranslation;
+    }
+
+    public double[] getBotRotation() {
+        botRotation = new double[]{getBotPose()[3], getBotPose()[4], getBotPose()[5]};
+        return botRotation;
+    }
+
     /**
      * Updates SmartDashboard.
      */
@@ -235,6 +306,12 @@ public class LimeLight extends SubsystemBase {
         SmartDashboard.putNumber("LimelightArea", getArea());
         SmartDashboard.putNumber("CurrentTargetedTagID", getTagID());
         SmartDashboard.putNumber("CurrentPipline", getPipline());
+        SmartDashboard.putNumber("TranslationX", getBotTranslation()[0]);
+        SmartDashboard.putNumber("TranslationY", getBotTranslation()[1]);
+        SmartDashboard.putNumber("TranslationZ", getBotTranslation()[2]);
+        SmartDashboard.putNumber("RotationX", getBotRotation()[0]);
+        SmartDashboard.putNumber("RotationY", getBotRotation()[0]);
+        SmartDashboard.putNumber("RotationZ", getBotRotation()[0]);
 
         SmartDashboard.putNumber("Object Distance", calculateDistanceToTargetMeters(
                 LimelightConstants.kLLHeight,

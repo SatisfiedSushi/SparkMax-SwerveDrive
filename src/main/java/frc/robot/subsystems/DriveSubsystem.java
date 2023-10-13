@@ -23,14 +23,11 @@ import com.pathplanner.lib.commands.PPSwerveControllerCommand;
 
 import frc.robot.Constants;
 import frc.robot.Constants.DriveConstants;
-import frc.robot.Constants.LimelightConstants;
 import frc.utils.SwerveUtils;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-
-import frc.robot.subsystems.LimeLight;
 
 public class DriveSubsystem extends SubsystemBase {
     private LimeLight LL;
@@ -57,10 +54,16 @@ public class DriveSubsystem extends SubsystemBase {
             DriveConstants.kRearRightTurningCanId,
             DriveConstants.kBackRightChassisAngularOffset);
 
+    private double m_frontLeftPosition = m_frontLeft.getPosition().distanceMeters;
+    private double m_frontRightPosition = m_frontRight.getPosition().distanceMeters;
+    private double m_rearLeftPosition = m_rearLeft.getPosition().distanceMeters;
+    private double m_rearRightPosition = m_rearRight.getPosition().distanceMeters;
+
     // The gyro sensor
     private final AHRS m_gyro = new AHRS(SPI.Port.kMXP); // navX
 
     private boolean isFieldRelative = true;
+    private boolean isBalancing = false;
     private boolean isTrackingObject = false; // allows for rotation to be controlled by the limelight
     private boolean isAvoidingObject = false;
     private boolean isAimAssist = true; // allows for rotation to be controlled by the controller and the limelight
@@ -104,9 +107,23 @@ public class DriveSubsystem extends SubsystemBase {
 
     public void updateShuffleBoard() {
         SmartDashboard.putNumber("Gyro Angle", Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset);
+        SmartDashboard.putNumber("Gyro Roll", Rotation2d.fromDegrees(m_gyro.getRoll()).getDegrees());
         SmartDashboard.putBoolean("Field Relative", isFieldRelative);
         SmartDashboard.putBoolean("Tracking Object", isTrackingObject);
         SmartDashboard.putBoolean("Avoiding Object", isAvoidingObject);
+        SmartDashboard.putBoolean("Balancing", isBalancing);
+        SmartDashboard.putNumber("stupid", convertToRange(Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset));
+        SmartDashboard.putNumber("gyrooffset", gyroOffset);
+
+        m_frontLeftPosition = m_frontLeft.getPosition().distanceMeters;
+        m_frontRightPosition = m_frontRight.getPosition().distanceMeters;
+        m_rearLeftPosition = m_rearLeft.getPosition().distanceMeters;
+        m_rearRightPosition = m_rearRight.getPosition().distanceMeters;
+
+        SmartDashboard.putNumber("FR Odometry", m_frontRightPosition);
+        SmartDashboard.putNumber("FL Odometry", m_frontLeftPosition);
+        SmartDashboard.putNumber("BR Odometry", m_rearRightPosition);
+        SmartDashboard.putNumber("BL Odometry", m_rearLeftPosition);
     }
 
     @Override
@@ -129,6 +146,10 @@ public class DriveSubsystem extends SubsystemBase {
      * @return The pose.
      */
     public Pose2d getPose() {
+        int[] array = {1, 2, 3};
+        if (LL.getBotPose2d() != null || (LL.getBotPose2d().getX() != 0 && LL.getBotPose2d().getY() != 0)) {
+            return LL.getBotPose2d();
+        }
         return m_odometry.getPoseMeters();
     }
 
@@ -152,8 +173,8 @@ public class DriveSubsystem extends SubsystemBase {
     /**
      * Method to drive the robot using joystick info.
      *
-     * @param xSpeed         Speed of the robot in the x direction (forward).
-     * @param ySpeed         Speed of the robot in the y direction (sideways).
+     * @param _xSpeed         Speed of the robot in the x direction (forward).
+     * @param _ySpeed         Speed of the robot in the y direction (sideways).
      * @param rot            Angular rate of the robot.
      * @param fieldRelative  Whether the provided x and y speeds are relative to the
      *                       field.
@@ -161,19 +182,22 @@ public class DriveSubsystem extends SubsystemBase {
      * @param trackingObject Whether to enable object tracking using a limelight
      */
     public void drive(double _xSpeed, double _ySpeed, double rot, boolean fieldRelative, boolean rateLimit,
-            boolean trackingObject, boolean avoidingObject) {
+            boolean trackingObject, boolean avoidingObject, boolean balancing) {
 
         LL.setPipeline(7.0);
 
+        this.isBalancing = balancing;
         this.isFieldRelative = fieldRelative;
+        this.isBalancing = balancing;
         this.isTrackingObject = trackingObject;
         this.isAvoidingObject = avoidingObject;
 
-        double xSpeed = _xSpeed;
-        double ySpeed = _ySpeed;
+        double xSpeed = balancing ? 0 : _xSpeed;
+        double ySpeed = balancing ? calculateBalanceRollAdjustmentVelocity(_ySpeed) : _ySpeed;
+        rot = balancing ? calculateBalanceCenterTrackingAngularVelocity() : rot;
 
         if (avoidingObject) {
-            if (fieldRelative) {
+            if (this.isFieldRelative) {
                 if (Math.max(xSpeed, ySpeed) == xSpeed) {
                     ySpeed = calculateObjectAvoidanceVelocity(ySpeed);
                 } else {
@@ -183,6 +207,8 @@ public class DriveSubsystem extends SubsystemBase {
                 xSpeed = calculateObjectAvoidanceVelocity(_xSpeed);
             }
         }
+
+        // changes xspeed and yspeed based off of the navx gyro to stop the robot from tipping over only from the front
 
         double xSpeedCommanded;
         double ySpeedCommanded;
@@ -226,11 +252,13 @@ public class DriveSubsystem extends SubsystemBase {
 
             xSpeedCommanded = m_currentTranslationMag * Math.cos(m_currentTranslationDir);
             ySpeedCommanded = m_currentTranslationMag * Math.sin(m_currentTranslationDir);
+            //m_currentRotation = m_rotLimiter.calculate(trackingObject ? calculateTrackingAngularVelocity(rot) : balancing ? calculateBalanceCenterTrackingAngularVelocity(rot) : rot);
             m_currentRotation = m_rotLimiter.calculate(trackingObject ? calculateTrackingAngularVelocity(rot) : rot);
 
         } else {
             xSpeedCommanded = xSpeed;
             ySpeedCommanded = ySpeed;
+            //m_currentRotation = m_rotLimiter.calculate(trackingObject ? calculateTrackingAngularVelocity(rot) : balancing ? calculateBalanceCenterTrackingAngularVelocity(rot) : rot);
             m_currentRotation = m_rotLimiter.calculate(trackingObject ? calculateTrackingAngularVelocity(rot) : rot);
         }
 
@@ -240,7 +268,7 @@ public class DriveSubsystem extends SubsystemBase {
         double rotDelivered = m_currentRotation * DriveConstants.kMaxAngularSpeed;
 
         var swerveModuleStates = DriveConstants.kDriveKinematics.toSwerveModuleStates(
-                fieldRelative
+                this.isFieldRelative
                         ? ChassisSpeeds.fromFieldRelativeSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered,
                                 Rotation2d.fromDegrees(-m_gyro.getYaw() + gyroOffset))
                         : new ChassisSpeeds(xSpeedDelivered, ySpeedDelivered, rotDelivered));
@@ -250,6 +278,49 @@ public class DriveSubsystem extends SubsystemBase {
         m_frontRight.setDesiredState(swerveModuleStates[1]);
         m_rearLeft.setDesiredState(swerveModuleStates[2]);
         m_rearRight.setDesiredState(swerveModuleStates[3]);
+    }
+
+    private double convertToRange(double degrees) {
+        degrees = degrees % 360; // Convert degrees to the range of -360 to 360
+
+        if (degrees > 180) {
+            degrees -= 360; // Adjust degrees greater than 180 to the corresponding negative range
+        } else if (degrees < -180) {
+            degrees += 360; // Adjust degrees less than -180 to the corresponding positive range
+        }
+
+        return degrees;
+    }
+
+    public double calculateBalanceRollAdjustmentVelocity(double ySpeed) {
+        double speedReduction = 2;
+        SmartDashboard.putNumber("roll", m_gyro.getRoll());
+
+        if (!(m_gyro.getRoll() <= 2 && m_gyro.getRoll() >= -2)) {
+            return trackingPID.calculate(Rotation2d.fromDegrees(m_gyro.getRoll()).getDegrees(), 0) / speedReduction;
+        }
+
+        return 0;
+    }
+
+    public double calculateBalanceCenterTrackingAngularVelocity() {
+        double speedReduction = 2;
+
+        if (!(convertToRange(Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset) >= -2 && convertToRange(Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset) <= 2)) {
+            return trackingPID.calculate(convertToRange(Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset), 0) / speedReduction;
+        }
+
+        return 0;
+    }
+
+    public double calculateTurnTo180AngularVelocity() {
+        double speedReduction = 2;
+
+        if (!(convertToRange(Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset) >= 178 && convertToRange(Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset) <= -178)) {
+            return trackingPID.calculate(convertToRange(Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset), 0) / speedReduction;
+        }
+
+        return 0;
     }
 
     public double calculateTrackingAngularVelocity(double rot) {
