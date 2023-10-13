@@ -5,9 +5,11 @@
 package frc.robot.subsystems;
 
 import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
@@ -15,6 +17,7 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.util.WPIUtilJNI;
 import edu.wpi.first.wpilibj.SPI;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import com.kauailabs.navx.frc.AHRS;
@@ -84,7 +87,7 @@ public class DriveSubsystem extends SubsystemBase {
             DriveConstants.kAvoidingD);
 
     // Odometry class for tracking robot pose
-    SwerveDriveOdometry m_odometry = new SwerveDriveOdometry(
+    SwerveDrivePoseEstimator m_odometry = new SwerveDrivePoseEstimator(
             DriveConstants.kDriveKinematics,
             Rotation2d.fromDegrees(-m_gyro.getYaw()),
             new SwerveModulePosition[] {
@@ -92,7 +95,9 @@ public class DriveSubsystem extends SubsystemBase {
                     m_frontRight.getPosition(),
                     m_rearLeft.getPosition(),
                     m_rearRight.getPosition()
-            });
+            },
+            new Pose2d(new Translation2d(0, 0), Rotation2d.fromDegrees(0))
+    );
 
     /** Creates a new DriveSubsystem. */
     public DriveSubsystem(LimeLight LL) {
@@ -138,6 +143,7 @@ public class DriveSubsystem extends SubsystemBase {
                         m_rearLeft.getPosition(),
                         m_rearRight.getPosition()
                 });
+        m_odometry.addVisionMeasurement(LL.getBotPose2d(), LL.getLocalizationLatency());
     }
 
     /**
@@ -146,11 +152,10 @@ public class DriveSubsystem extends SubsystemBase {
      * @return The pose.
      */
     public Pose2d getPose() {
-        int[] array = {1, 2, 3};
-        if (LL.getBotPose2d() != null || (LL.getBotPose2d().getX() != 0 && LL.getBotPose2d().getY() != 0)) {
+        /*if (LL.getBotPose2d() != null || (LL.getBotPose2d().getX() != 0 && LL.getBotPose2d().getY() != 0)) {
             return LL.getBotPose2d();
-        }
-        return m_odometry.getPoseMeters();
+        }*/
+        return m_odometry.getEstimatedPosition();
     }
 
     /**
@@ -207,6 +212,12 @@ public class DriveSubsystem extends SubsystemBase {
                 xSpeed = calculateObjectAvoidanceVelocity(_xSpeed);
             }
         }
+
+        double speedReduction = 4;
+
+        xSpeed = xSpeed / speedReduction;
+        ySpeed = ySpeed / speedReduction;
+        rot = rot / speedReduction;
 
         // changes xspeed and yspeed based off of the navx gyro to stop the robot from tipping over only from the front
 
@@ -306,7 +317,7 @@ public class DriveSubsystem extends SubsystemBase {
     public double calculateBalanceCenterTrackingAngularVelocity() {
         double speedReduction = 2;
 
-        if (!(convertToRange(Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset) >= -2 && convertToRange(Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset) <= 2)) {
+        if (!(convertToRange(Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset) >= -0.5 && convertToRange(Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset) <= 0.5)) {
             return trackingPID.calculate(convertToRange(Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset), 0) / speedReduction;
         }
 
@@ -316,7 +327,7 @@ public class DriveSubsystem extends SubsystemBase {
     public double calculateTurnTo180AngularVelocity() {
         double speedReduction = 2;
 
-        if (!(convertToRange(Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset) >= 178 && convertToRange(Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset) <= -178)) {
+        if (!(convertToRange(Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset) >= 179.5 && convertToRange(Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset) <= -179.5)) {
             return trackingPID.calculate(convertToRange(Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset), 0) / speedReduction;
         }
 

@@ -5,6 +5,7 @@
 package frc.robot.subsystems;
 
 import edu.wpi.first.math.geometry.*;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -63,6 +64,10 @@ public class LimeLight extends SubsystemBase {
         return tx.getDouble(0.0);
     }
 
+    public double getLocalizationLatency() {
+        return Timer.getFPGATimestamp() - (getBotPose()[6]/1000.0);
+    }
+
     public double[] getBotPose() {
         botPoseArray = botpose.getDoubleArray(new double[6]);
         return botpose.getDoubleArray(new double[6]);
@@ -77,8 +82,7 @@ public class LimeLight extends SubsystemBase {
 
     public Rotation2d getBotRotation2d() {
         return new Rotation2d(
-                getBotRotation()[0],
-                getBotRotation()[1]
+                getBotRotation()[2]
         );
     }
 

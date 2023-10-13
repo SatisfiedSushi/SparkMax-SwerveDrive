@@ -234,4 +234,6 @@ public final class Constants {
         public static final double maxVel = 0.00001;
         public static final double maxAccel = 0.0000001;
     }
+
+    public static final boolean kIsTeamBlue = true;
 }

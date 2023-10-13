@@ -10,12 +10,10 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.XboxController.Button;
-import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
+import edu.wpi.first.wpilibj2.command.*;
+import edu.wpi.first.wpilibj2.command.button.POVButton;
 import frc.robot.Constants.OIConstants;
 import frc.robot.subsystems.DriveSubsystem;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 import frc.robot.subsystems.Intake;
@@ -94,13 +92,13 @@ public class RobotContainer {
         configureButtonBindings();
 
         Command driveCommand = new RunCommand(() -> m_robotDrive.drive(
-                -MathUtil.applyDeadband(m_driverController.getLeftY() / 2,
+                -MathUtil.applyDeadband(m_driverController.getLeftY(),
                         OIConstants.kDriveDeadband),
                 -MathUtil.applyDeadband(
-                        m_driverController.getLeftX() / 2,
+                        m_driverController.getLeftX(),
                         OIConstants.kDriveDeadband),
                 -MathUtil.applyDeadband(
-                        m_driverController.getRightX() / 2,
+                        m_driverController.getRightX(),
                         OIConstants.kDriveDeadband),
                 isFieldRelative, true, isTrackingObject,
                 isAvoidingObject, isBalancing),
@@ -150,6 +148,9 @@ public class RobotContainer {
         new JoystickButton(m_driverController, Button.kX.value)
                 .toggleOnTrue(new InstantCommand(
                         this::toggleTracking));
+        new POVButton(m_driverController, 90).onTrue(getAutoAlignAndPlaceCommand("right"));
+        new POVButton(m_driverController, 270).onTrue(getAutoAlignAndPlaceCommand("left"));
+        new POVButton(m_driverController, 0).onTrue(getAutoAlignAndPlaceCommand("middle"));
 
         /*
          * new JoystickButton(m_driverController, Button.kRightBumper.value)
@@ -291,7 +292,44 @@ public class RobotContainer {
         return m_robotDrive.followTrajectoryCommand(RightPlaceMove, true);
     }
 
-    /*public Command getAutoAlignAndPlaceCommand() {
+    public Command moveDistanceY(double distance) {
+        PathPlannerTrajectory moveDistanceY = PathPlanner.generatePath(
+                new PathConstraints(maxVel, maxAccel),
+                new PathPoint(new Translation2d(0, 0),
+                        Rotation2d.fromDegrees(0),
+                        Rotation2d.fromDegrees(0)),
+
+                new PathPoint(new Translation2d(0, distance),
+                        Rotation2d.fromDegrees(0),
+                        Rotation2d.fromDegrees(0))
+        );
+        return m_robotDrive.followTrajectoryCommand(moveDistanceY, true);
+    }
+
+    //TODO: SWITCH TO LOCALIZATION IF HAVE TIME BECAUSE THIS AINT WORKING
+    public Command getAutoAlignAndPlaceCommand(String location) {
         Command autoAlign = new RunCommand(m_robotDrive::calculateTurnTo180AngularVelocity, m_robotDrive).until(() -> m_robotDrive.calculateTurnTo180AngularVelocity() == 0);
-    }*/
+        Command setPipelineToTags = new InstantCommand(() -> m_limeLight.setPipeline(Constants.kIsTeamBlue ? 2 : 3), m_limeLight);
+        Command trackApriltag = new RunCommand(() -> m_robotDrive.drive(Integer.signum((int)m_limeLight.getXAngle()), 0, 0, isFieldRelative, true, isTrackingObject,
+                isAvoidingObject, isBalancing), m_robotDrive, m_limeLight).until(() -> m_robotDrive.calculateTurnTo180AngularVelocity() == 0);
+        Command moveIntoPlace = moveDistanceY(m_limeLight.calculateDistanceToTargetMeters(Constants.LimelightConstants.kLLHeight,
+                Constants.LimelightConstants.kObjectHeight,
+                Constants.LimelightConstants.kLLPitch,
+                Math.toRadians(m_limeLight.getYAngle())) - 5).until(() -> m_limeLight.calculateDistanceToTargetMeters(Constants.LimelightConstants.kLLHeight,
+                Constants.LimelightConstants.kObjectHeight,
+                Constants.LimelightConstants.kLLPitch,
+                Math.toRadians(m_limeLight.getYAngle())) <= 5);
+        Command moveToPlace = moveDistanceY(0.3);
+
+        switch (location){
+            case "left":
+                return new SequentialCommandGroup(autoAlign, setPipelineToTags, trackApriltag, moveIntoPlace, getLeftPlaceMoveCommand(), moveToPlace, new InstantCommand(m_intake::openIntake, m_intake));
+            case "right":
+                return new SequentialCommandGroup(autoAlign, setPipelineToTags, trackApriltag, moveIntoPlace, getRightPlaceMoveCommand(), moveToPlace, new InstantCommand(m_intake::openIntake, m_intake));
+            case "middle":
+                return new SequentialCommandGroup(autoAlign, setPipelineToTags, trackApriltag, moveIntoPlace, moveToPlace, new InstantCommand(m_intake::openIntake, m_intake));
+            default:
+                return new SequentialCommandGroup(autoAlign, setPipelineToTags, trackApriltag, moveIntoPlace, moveToPlace, new InstantCommand(m_intake::openIntake, m_intake));
+        }
+    }
 }
