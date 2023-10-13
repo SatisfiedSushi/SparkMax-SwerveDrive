@@ -129,6 +129,9 @@ public class DriveSubsystem extends SubsystemBase {
         SmartDashboard.putNumber("FL Odometry", m_frontLeftPosition);
         SmartDashboard.putNumber("BR Odometry", m_rearRightPosition);
         SmartDashboard.putNumber("BL Odometry", m_rearLeftPosition);
+        SmartDashboard.putNumber("X Translation Drive", m_odometry.getEstimatedPosition().getX());
+        SmartDashboard.putNumber("Y Translation Drive", m_odometry.getEstimatedPosition().getY());
+        SmartDashboard.putNumber("Yaw Rotation Drive", m_odometry.getEstimatedPosition().getRotation().getDegrees());
     }
 
     @Override
@@ -143,7 +146,8 @@ public class DriveSubsystem extends SubsystemBase {
                         m_rearLeft.getPosition(),
                         m_rearRight.getPosition()
                 });
-        m_odometry.addVisionMeasurement(LL.getBotPose2d(), LL.getLocalizationLatency());
+        //m_odometry.addVisionMeasurement(LL.getBotPose2d(), LL.getLocalizationLatency());
+        m_odometry.addVisionMeasurement(LL.getBotPose2d(), 0.03);
     }
 
     /**
@@ -189,9 +193,6 @@ public class DriveSubsystem extends SubsystemBase {
     public void drive(double _xSpeed, double _ySpeed, double rot, boolean fieldRelative, boolean rateLimit,
             boolean trackingObject, boolean avoidingObject, boolean balancing) {
 
-        LL.setPipeline(7.0);
-
-        this.isBalancing = balancing;
         this.isFieldRelative = fieldRelative;
         this.isBalancing = balancing;
         this.isTrackingObject = trackingObject;
@@ -213,7 +214,7 @@ public class DriveSubsystem extends SubsystemBase {
             }
         }
 
-        double speedReduction = 4;
+        double speedReduction = 1;
 
         xSpeed = xSpeed / speedReduction;
         ySpeed = ySpeed / speedReduction;
@@ -326,9 +327,10 @@ public class DriveSubsystem extends SubsystemBase {
 
     public double calculateTurnTo180AngularVelocity() {
         double speedReduction = 2;
-
-        if (!(convertToRange(Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset) >= 179.5 && convertToRange(Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset) <= -179.5)) {
-            return trackingPID.calculate(convertToRange(Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset), 0) / speedReduction;
+        double setPoint = convertToRange(Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset) / Math.abs(convertToRange(Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset));
+        SmartDashboard.putNumber("test", convertToRange(Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset));
+        if (!(convertToRange(Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset) >= 178 || convertToRange(Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset) <= -178)) {
+            return trackingPID.calculate(convertToRange(Rotation2d.fromDegrees(-m_gyro.getYaw()).getDegrees() + gyroOffset),setPoint * 180) / speedReduction;
         }
 
         return 0;

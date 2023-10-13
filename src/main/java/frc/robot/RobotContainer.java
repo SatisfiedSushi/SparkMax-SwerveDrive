@@ -84,6 +84,14 @@ public class RobotContainer {
         }
     }
 
+    private void toggleCam() {
+        if (m_limeLight.getPipline() == 7.0) {
+            m_limeLight.setPipeline(8);
+        } else {
+            m_limeLight.setPipeline(7);
+        }
+    }
+
     /**
      * The container for the robot. Contains subsystems, OI devices, and commands.
      */
@@ -148,9 +156,14 @@ public class RobotContainer {
         new JoystickButton(m_driverController, Button.kX.value)
                 .toggleOnTrue(new InstantCommand(
                         this::toggleTracking));
-        new POVButton(m_driverController, 90).onTrue(getAutoAlignAndPlaceCommand("right"));
-        new POVButton(m_driverController, 270).onTrue(getAutoAlignAndPlaceCommand("left"));
-        new POVButton(m_driverController, 0).onTrue(getAutoAlignAndPlaceCommand("middle"));
+
+        new JoystickButton(m_driverController, Button.kLeftBumper.value)
+                .toggleOnTrue(new InstantCommand(
+                        this::toggleCam));
+
+        //new POVButton(m_driverController, 90).onTrue(getAutoAlignAndPlaceCommand("right"));
+        //new POVButton(m_driverController, 270).onTrue(getAutoAlignAndPlaceCommand("left"));
+        //new POVButton(m_driverController, 0).onTrue(getAutoAlignAndPlaceCommand("middle"));
 
         /*
          * new JoystickButton(m_driverController, Button.kRightBumper.value)
@@ -308,10 +321,13 @@ public class RobotContainer {
 
     //TODO: SWITCH TO LOCALIZATION IF HAVE TIME BECAUSE THIS AINT WORKING
     public Command getAutoAlignAndPlaceCommand(String location) {
-        Command autoAlign = new RunCommand(m_robotDrive::calculateTurnTo180AngularVelocity, m_robotDrive).until(() -> m_robotDrive.calculateTurnTo180AngularVelocity() == 0);
+        isFieldRelative = false;
+        isTrackingObject = false;
+        Command autoAlign = new RunCommand(() -> m_robotDrive.drive(0, 0, m_robotDrive.calculateTurnTo180AngularVelocity(), isFieldRelative, true, false,
+                false, false), m_robotDrive).until(() -> m_robotDrive.calculateTurnTo180AngularVelocity() == 0);
         Command setPipelineToTags = new InstantCommand(() -> m_limeLight.setPipeline(Constants.kIsTeamBlue ? 2 : 3), m_limeLight);
-        Command trackApriltag = new RunCommand(() -> m_robotDrive.drive(Integer.signum((int)m_limeLight.getXAngle()), 0, 0, isFieldRelative, true, isTrackingObject,
-                isAvoidingObject, isBalancing), m_robotDrive, m_limeLight).until(() -> m_robotDrive.calculateTurnTo180AngularVelocity() == 0);
+        Command trackApriltag = new RunCommand(() -> m_robotDrive.drive(0, 0, 0, isFieldRelative, true, true,
+                false, false), m_robotDrive, m_limeLight).until(() -> m_robotDrive.calculateTurnTo180AngularVelocity() == 0);
         Command moveIntoPlace = moveDistanceY(m_limeLight.calculateDistanceToTargetMeters(Constants.LimelightConstants.kLLHeight,
                 Constants.LimelightConstants.kObjectHeight,
                 Constants.LimelightConstants.kLLPitch,
@@ -327,7 +343,7 @@ public class RobotContainer {
             case "right":
                 return new SequentialCommandGroup(autoAlign, setPipelineToTags, trackApriltag, moveIntoPlace, getRightPlaceMoveCommand(), moveToPlace, new InstantCommand(m_intake::openIntake, m_intake));
             case "middle":
-                return new SequentialCommandGroup(autoAlign, setPipelineToTags, trackApriltag, moveIntoPlace, moveToPlace, new InstantCommand(m_intake::openIntake, m_intake));
+                return autoAlign;
             default:
                 return new SequentialCommandGroup(autoAlign, setPipelineToTags, trackApriltag, moveIntoPlace, moveToPlace, new InstantCommand(m_intake::openIntake, m_intake));
         }
