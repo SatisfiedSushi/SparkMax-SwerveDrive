@@ -18,10 +18,10 @@ import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.LimeLight;
-import com.pathplanner.lib.PathConstraints;
-import com.pathplanner.lib.PathPlanner;
-import com.pathplanner.lib.PathPlannerTrajectory;
-import com.pathplanner.lib.PathPoint;
+//import com.pathplanner.lib.PathConstraints;
+//import com.pathplanner.lib.PathPlanner;
+//import com.pathplanner.lib.PathPlannerTrajectory;
+//import com.pathplanner.lib.PathPoint;
 
 /*
  * This class is where the bulk of the robot should be declared.  Since Command-based is a
@@ -29,7 +29,7 @@ import com.pathplanner.lib.PathPoint;
  * periodic methods (other than the scheduler calls).  Instead, the structure of the robot
  * (including subsystems, commands, and button mappings) should be declared here.
  */
-public class RobotContainer {
+public class RobotContainer {   
     // The robot's subsystems
     private final LimeLight m_limeLight = new LimeLight();
     private final DriveSubsystem m_robotDrive = new DriveSubsystem(m_limeLight);
@@ -178,106 +178,9 @@ public class RobotContainer {
          */
     }
 
-    /**
-     * Use this to pass the autonomous command to the main {@link Robot} class.
-     *
-     * @return the command to run in autonomous
-     */
-    public Command getAutonomousCommand() {
-        /**
-         //one meter forward
-         PathPlannerTrajectory oneMeter = PathPlanner.loadPath("one meter", new PathConstraints(4, 3));
-         PathPlannerState oneMeterState = (PathPlannerState) oneMeter.sample(1.2);
-         System.out.println(oneMeterState.velocityMetersPerSecond);
-         return m_robotDrive.followTrajectoryCommand(oneMeter, true);
-         **/
+    
 
-        //90 deg
-        PathPlannerTrajectory ninetyDeg = PathPlanner.loadPath("New Path Copy", new PathConstraints(maxVel, maxAccel));
-
-        // Move forward 2 feet, turn 180 degrees, move forward 2 feet, reverse 2 feet
-        PathPlannerTrajectory task1 = PathPlanner.generatePath(
-                new PathConstraints(0.5, 0.2),
-                new PathPoint(new Translation2d(0, 0), Rotation2d.fromDegrees(0),
-                        Rotation2d.fromDegrees(0)),
-                new PathPoint(new Translation2d(0.61, 0), Rotation2d.fromDegrees(0),
-                        Rotation2d.fromDegrees(0)),
-                new PathPoint(new Translation2d(0, 0), Rotation2d.fromDegrees(0),
-                        Rotation2d.fromDegrees(0)),
-                new PathPoint(new Translation2d(0.61, 0), Rotation2d.fromDegrees(0),
-                        Rotation2d.fromDegrees(0)));
-        // return m_robotDrive.followTrajectoryCommand(task1, true);
-
-        //square
-        PathPlannerTrajectory square = PathPlanner.generatePath(
-                new PathConstraints(maxVel, maxAccel),
-                new PathPoint(new Translation2d(0, 0),
-                        Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0)),
-                new PathPoint(new Translation2d(0, squareSize),
-                        Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0)),
-                new PathPoint(new Translation2d(-squareSize, squareSize),
-                        Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0)),
-                new PathPoint(new Translation2d(-squareSize, 0),
-                        Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0)),
-                new PathPoint(new Translation2d(0, 0),
-                        Rotation2d.fromDegrees(0), Rotation2d.fromDegrees(0))
-        );
-        //return m_robotDrive.followTrajectoryCommand(square, true);
-
-        //figure 8
-        PathPlannerTrajectory figureEight = PathPlanner.generatePath(
-                new PathConstraints(maxVel, maxAccel),
-                new PathPoint(new Translation2d(0, 0),
-                        Rotation2d.fromDegrees(45), Rotation2d.fromDegrees(45)),
-                new PathPoint(new Translation2d(figureEightSize / 2, 0),
-                        Rotation2d.fromDegrees(-90), Rotation2d.fromDegrees(-90)),
-                new PathPoint(new Translation2d(0, 0),
-                        Rotation2d.fromDegrees(-45), Rotation2d.fromDegrees(-45)),
-                new PathPoint(new Translation2d(-figureEightSize / 2, 0),
-                        Rotation2d.fromDegrees(-90), Rotation2d.fromDegrees(-90)),
-                new PathPoint(new Translation2d(0, 0),
-                        Rotation2d.fromDegrees(45), Rotation2d.fromDegrees(45))
-        );
-        //return m_robotDrive.followTrajectoryCommand(figureEight, true);
-
-        //star
-        /**PathPlannerTrajectory star = PathPlanner.generatePath(
-         new PathConstraints(4, 3),
-         new PathPoint(new Translation2d(Constants.shapeSizes.figureEightSize*Math.sin(72),
-         Constants.shapeSizes.figureEightSize*Math.sin(72)),
-         Rotation2d.fromDegrees(72),
-         Rotation2d.fromDegrees(72)),
-         new PathPoint(new Translation2d(Constants.shapeSizes.figureEightSize*Math.sin(72),
-         );**/
-
-        //PID tune
-        PathPlannerTrajectory pidTune = PathPlanner.generatePath(
-                new PathConstraints(maxVel, maxAccel),
-                new PathPoint(new Translation2d(0, 0),
-                        Rotation2d.fromDegrees(0),
-                        Rotation2d.fromDegrees(0)),
-
-                new PathPoint(new Translation2d(Units.feetToMeters(2), 0),
-                        Rotation2d.fromDegrees(0),
-                        Rotation2d.fromDegrees(0))
-        );
-
-        //turn tune
-        PathPlannerTrajectory pidTurn = PathPlanner.generatePath(
-                new PathConstraints(maxVel, maxAccel),
-                new PathPoint(new Translation2d(0, 0),
-                        Rotation2d.fromDegrees(0),
-                        Rotation2d.fromDegrees(0)),
-
-                new PathPoint(new Translation2d(0, 0),
-                        Rotation2d.fromDegrees(0),
-                        Rotation2d.fromDegrees(90))
-        );
-
-        return m_robotDrive.followTrajectoryCommand(pidTurn, true);
-    }
-
-    public Command getLeftPlaceMoveCommand() {
+    /*public Command getLeftPlaceMoveCommand() {
         PathPlannerTrajectory LeftPlaceMove = PathPlanner.generatePath(
                 new PathConstraints(maxVel, maxAccel),
                 new PathPoint(new Translation2d(0, 0),
@@ -317,10 +220,10 @@ public class RobotContainer {
                         Rotation2d.fromDegrees(0))
         );
         return m_robotDrive.followTrajectoryCommand(moveDistanceY, true);
-    }
+    }*/
 
     //TODO: SWITCH TO LOCALIZATION IF HAVE TIME BECAUSE THIS AINT WORKING
-    public Command getAutoAlignAndPlaceCommand(String location) {
+    /*public Command getAutoAlignAndPlaceCommand(String location) {
         isFieldRelative = false;
         isTrackingObject = false;
         Command autoAlign = new RunCommand(() -> m_robotDrive.drive(0, 0, m_robotDrive.calculateTurnTo180AngularVelocity(), isFieldRelative, true, false,
@@ -347,5 +250,5 @@ public class RobotContainer {
             default:
                 return new SequentialCommandGroup(autoAlign, setPipelineToTags, trackApriltag, moveIntoPlace, moveToPlace, new InstantCommand(m_intake::openIntake, m_intake));
         }
-    }
+    }*/
 }

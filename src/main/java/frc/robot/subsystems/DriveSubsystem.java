@@ -21,8 +21,8 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import com.kauailabs.navx.frc.AHRS;
-import com.pathplanner.lib.PathPlannerTrajectory;
-import com.pathplanner.lib.commands.PPSwerveControllerCommand;
+//import com.pathplanner.lib.PathPlannerTrajectory;
+//import com.pathplanner.lib.commands.PPSwerveControllerCommand;
 
 import frc.robot.Constants;
 import frc.robot.Constants.DriveConstants;
@@ -457,7 +457,7 @@ public class DriveSubsystem extends SubsystemBase {
         return m_gyro.getRate() * (DriveConstants.kGyroReversed ? -1.0 : 1.0);
     }
 
-    public Command followTrajectoryCommand(PathPlannerTrajectory traj, boolean isFirstPath) {
+    /*public Command followTrajectoryCommand(PathPlannerTrajectory traj, boolean isFirstPath) {
         return new SequentialCommandGroup(
                 new InstantCommand(() -> {
                     // Reset odometry for the first path you run during auto
@@ -479,5 +479,5 @@ public class DriveSubsystem extends SubsystemBase {
                               // Optional, defaults to true
                         this // Requires this drive subsystem
                 ));
-    }
+    }*/
 }

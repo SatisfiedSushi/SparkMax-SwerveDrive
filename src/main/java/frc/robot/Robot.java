@@ -4,7 +4,7 @@
 
 package frc.robot;
 
-import com.pathplanner.lib.server.PathPlannerServer;
+//import com.pathplanner.lib.server.PathPlannerServer;
 
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -35,7 +35,7 @@ public class Robot extends TimedRobot {
         // and put our
         // autonomous chooser on the dashboard.
         m_robotContainer = new RobotContainer();
-        PathPlannerServer.startServer(5811); // 5811 = port number. adjust this according to your needs
+        //PathPlannerServer.startServer(5811); // 5811 = port number. adjust this according to your needs
     }
 
     /**
@@ -75,7 +75,7 @@ public class Robot extends TimedRobot {
      */
     @Override
     public void autonomousInit() {
-        m_autonomousCommand = m_robotContainer.getAutoAlignAndPlaceCommand("middle");
+        //m_autonomousCommand = m_robotContainer.getAutonomousCommand();
 
         /*
          * String autoSelected = SmartDashboard.getString("Auto Selector",
@@ -85,9 +85,9 @@ public class Robot extends TimedRobot {
          */
 
         // schedule the autonomous command (example)
-        if (m_autonomousCommand != null) {
+        /*if (m_autonomousCommand != null) {
             m_autonomousCommand.schedule();
-        }
+        }*/
     }
 
     /** This function is called periodically during autonomous. */
